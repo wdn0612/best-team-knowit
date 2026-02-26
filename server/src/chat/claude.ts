@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express"
+import { Request, Response } from "express"
 import asyncHandler from 'express-async-handler'
 
 type ModelLabel = 'claudeOpus' | 'claudeSonnet' | 'claudeHaiku'
@@ -54,8 +54,6 @@ export const claude = asyncHandler(async (req: Request, res: Response) => {
 
     const reader = response.body?.getReader()
     if (reader) {
-      let index = 0
-
       while (true) {
         const { done, value } = await reader.read()
 
