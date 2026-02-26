@@ -21,6 +21,8 @@ import { useActionSheet } from '@expo/react-native-action-sheet'
 import * as FileSystem from 'expo-file-system'
 import * as ImagePicker from 'expo-image-picker'
 import * as Clipboard from 'expo-clipboard'
+import { spacing } from '../theme'
+import { Button, ChatInput } from '../components'
 
 const { width } = Dimensions.get('window')
 
@@ -42,8 +44,6 @@ export function Images() {
     values: []
   })
   const {
-    handlePresentModalPress,
-    closeModal,
     imageModel
   } = useContext(AppContext)
 
@@ -130,7 +130,7 @@ export function Images() {
         imagesArray[imagesArray.length - 1].provider = providerLabel
         setImages(i => ({
           index: i.index,
-          values: imagesArray          
+          values: imagesArray
         }))
         setLoading(false)
         setTimeout(() => {
@@ -157,15 +157,18 @@ export function Images() {
         </Text>
         <TouchableHighlight
           onPress={() => setImage(null)}
-          style={styles.closeIconContainer}
           underlayColor={'transparent'}
+          accessibilityLabel="Remove selected image"
+          accessibilityRole="button"
         >
-          <MaterialIcons
-            style={styles.closeIcon}
-            name="close"
-            color={theme.textColor}
-            size={14}
-          />
+          <View style={styles.closeIconContainer}>
+            <MaterialIcons
+              style={styles.closeIcon}
+              name="close"
+              color={theme.textColor}
+              size={14}
+            />
+          </View>
         </TouchableHighlight>
       </View>
     )
@@ -183,8 +186,7 @@ export function Images() {
     })
   }
 
-  async function showClipboardActionsheet(d) {
-    closeModal()
+  async function showClipboardActionsheet(d: any) {
     const cancelButtonIndex = 2
     showActionSheetWithOptions({
       options: ['Save image', 'Clear prompts', 'cancel'],
@@ -261,16 +263,19 @@ export function Images() {
                           placeholderTextColor={theme.placeholderTextColor}
                           autoCorrect={true}
                           value={input}
+                          accessibilityLabel="Image prompt input"
                         />
                         <View style={styles.midButtonRow}>
                           <TouchableHighlight
                             onPress={generate}
                             underlayColor={'transparent'}
                             style={styles.midButtonWrapper}
+                            accessibilityLabel="Generate image"
+                            accessibilityRole="button"
                             onLongPress={
                               () => {
                                 Keyboard.dismiss()
-                                handlePresentModalPress()
+                                {}
                               }
                             }
                           >
@@ -285,18 +290,17 @@ export function Images() {
                             </View>
                           </TouchableHighlight>
                           {showImagePickerButton && (
-                            <TouchableHighlight
+                            <Button
+                              variant="ghost"
                               onPress={chooseImage}
-                              underlayColor={'transparent'}
+                              accessibilityLabel="Choose image from gallery"
                             >
-                              <View style={styles.addImageIconButton}>
-                                <Ionicons
-                                  name={image ? 'checkmark-circle' : 'camera-outline'}
-                                  size={20}
-                                  color={theme.textColor}
-                                />
-                              </View>
-                            </TouchableHighlight>
+                              <Ionicons
+                                name={image ? 'checkmark-circle' : 'camera-outline'}
+                                size={20}
+                                color={theme.textColor}
+                              />
+                            </Button>
                           )}
                         </View>
                       </>
@@ -304,22 +308,22 @@ export function Images() {
                   }
                   {
                     hideInput && (
-                      <TouchableHighlight
+                      <Button
+                        variant="primary"
                         onPress={image ? generate : chooseImage}
-                        underlayColor={'transparent'}
+                        accessibilityLabel={image ? buttonLabel : 'Choose image'}
+                        style={styles.midButtonStyle}
                       >
-                        <View style={styles.midButtonStyle}>
-                          <Ionicons
-                            name="images-outline"
-                            size={22} color={theme.tintTextColor}
-                          />
-                          <Text style={styles.midButtonText}>
-                            {
-                              image ? buttonLabel : 'Choose image'
-                            }
-                          </Text>
-                        </View>
-                      </TouchableHighlight>
+                        <Ionicons
+                          name="images-outline"
+                          size={22} color={theme.tintTextColor}
+                        />
+                        <Text style={styles.midButtonText}>
+                          {
+                            image ? buttonLabel : 'Choose image'
+                          }
+                        </Text>
+                      </Button>
                     )
                   }
                   {renderSelectedImage()}
@@ -354,10 +358,13 @@ export function Images() {
                       <TouchableHighlight
                         onPress={() => showClipboardActionsheet(v)}
                         underlayColor={'transparent'}
+                        accessibilityLabel="Save or manage image"
+                        accessibilityRole="button"
                       >
                         <Image
                           source={{ uri: v.image }}
                           style={styles.image}
+                          accessibilityLabel="Generated image"
                         />
                       </TouchableHighlight>
                       <View style={styles.modelLabelContainer}>
@@ -386,80 +393,76 @@ export function Images() {
                 !hideInput && (
                   <>
                     {renderSelectedImage()}
-                    <View style={styles.chatInputContainer}>
-                      <TouchableHighlight
-                        onPress={clearPrompts}
-                        underlayColor={'transparent'}
-                      >
-                        <View style={styles.clearButton}>
+                    <ChatInput
+                      value={input}
+                      onChangeText={onChangeText}
+                      onSubmit={generate}
+                      placeholder="What else do you want to create?"
+                      leftAction={
+                        <Button
+                          variant="ghost"
+                          onPress={clearPrompts}
+                          accessibilityLabel="Clear all prompts"
+                          style={styles.clearButton}
+                        >
                           <Ionicons
                             name="trash-outline"
                             size={18}
                             color={theme.textColor}
                           />
-                        </View>
-                      </TouchableHighlight>
-                      <TextInput
-                        onChangeText={onChangeText}
-                        style={styles.input}
-                        placeholder='What else do you want to create?'
-                        placeholderTextColor={theme.placeholderTextColor}
-                        autoCorrect={true}
-                        value={input}
-                      />
-                      {showImagePickerButton && (
-                        <TouchableHighlight
-                          onPress={chooseImage}
-                          underlayColor={'transparent'}
-                        >
-                          <View style={styles.attachIconButton}>
+                        </Button>
+                      }
+                      rightAction={
+                        <View style={styles.bottomActionRow}>
+                          {showImagePickerButton && (
+                            <Button
+                              variant="ghost"
+                              onPress={chooseImage}
+                              accessibilityLabel="Attach image"
+                              style={styles.attachIconButton}
+                            >
+                              <Ionicons
+                                name="images-outline"
+                                size={18}
+                                color={theme.tintTextColor}
+                              />
+                            </Button>
+                          )}
+                          <Button
+                            variant="icon"
+                            onPress={generate}
+                            accessibilityLabel="Generate image"
+                            style={styles.buttonStyle}
+                          >
                             <Ionicons
-                              name="images-outline"
-                              size={18}
-                              color={theme.tintTextColor}
+                              name="arrow-up"
+                              size={20} color={theme.tintTextColor}
                             />
-                          </View>
-                        </TouchableHighlight>
-                      )}
-                      <TouchableHighlight
-                        onPress={generate}
-                        underlayColor={'transparent'}
-                        onLongPress={
-                          () => {
-                            Keyboard.dismiss()
-                            handlePresentModalPress()
-                          }
-                        }
-                      >
-                        <View style={styles.buttonStyle}>
-                          <Ionicons
-                            name="arrow-up"
-                            size={20} color={theme.tintTextColor}
-                          />
+                          </Button>
                         </View>
-                      </TouchableHighlight>
-                    </View>
+                      }
+                    />
                   </>
                 )
               }
               {
                 hideInput && (
-                  <TouchableHighlight
+                  <Button
+                    variant="primary"
                     onPress={image ? generate : chooseImage}
-                    underlayColor={'transparent'}
+                    accessibilityLabel={image ? buttonLabel : 'Choose image'}
+                    style={styles.bottomButtonStyle}
                   >
-                    <View style={styles.bottomButtonStyle}>
-                      <Ionicons
-                        name="images-outline"
-                        size={22} color={theme.tintTextColor}
-                      />
-                      <Text style={styles.midButtonText}>
-                        {
-                          image ? buttonLabel : 'Choose image'
-                        }
-                      </Text>
-                    </View>
-                  </TouchableHighlight>
+                    <Ionicons
+                      name="images-outline"
+                      size={22} color={theme.tintTextColor}
+                    />
+                    <Text style={styles.midButtonText}>
+                      {
+                        image ? buttonLabel : 'Choose image'
+                      }
+                    </Text>
+                  </Button>
                 )
               }
             </>
@@ -470,78 +473,67 @@ export function Images() {
   )
 }
 
-const getStyles = theme => StyleSheet.create({
+const getStyles = (theme: any) => StyleSheet.create({
+  bottomActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   midButtonRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginHorizontal: 14
+    gap: spacing.md,
+    marginHorizontal: spacing.lg,
   },
   midButtonWrapper: {
     flex: 1
   },
-  addImageIconButton: {
-    padding: 10,
-    borderRadius: 99,
-    borderWidth: 1,
-    borderColor: theme.borderColor
-  },
-  clearButton: {
-    marginLeft: 10,
-    padding: 8,
-    borderRadius: 99,
-    borderWidth: 1,
-    borderColor: theme.borderColor
-  },
   closeIcon: {
     borderWidth: 1,
-    padding: 4,
+    padding: spacing.xs,
     backgroundColor: theme.backgroundColor,
     borderColor: theme.borderColor,
     borderRadius: 15
   },
   closeIconContainer: {
-    position: 'absolute',
-    right: -15,
-    top: -17,
-    padding: 10,
-    backgroundColor: 'transparent',
-    borderRadius: 25,
+    padding: spacing.sm,
+    marginLeft: spacing.sm,
   },
   fileName: {
     color: theme.textColor,
+    flex: 1,
   },
   midFileNameContainer: {
-    marginTop: 20,
-    marginHorizontal: 10,
-    marginRight: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
+    marginTop: spacing.xl,
+    marginHorizontal: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
     borderWidth: 1,
     borderColor: theme.borderColor,
-    borderRadius: 7,
+    borderRadius: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   imageContainer: {
-    marginBottom: 15
+    marginBottom: spacing.lg,
   },
   chatDescription: {
     color: theme.textColor,
     textAlign: 'center',
-    marginTop: 15,
+    marginTop: spacing.lg,
     fontSize: 13,
-    paddingHorizontal: 34,
+    paddingHorizontal: spacing.xxxl,
     opacity: .8,
     fontFamily: theme.regularFont
   },
   modelLabelContainer: {
-    padding: 9,
+    padding: spacing.sm,
     borderWidth: 1,
     borderTopWidth: 0,
     borderColor: theme.borderColor,
-    paddingLeft: 13,
-    borderBottomLeftRadius: 8,
-    borderBottomRightRadius: 8,
-    marginHorizontal: 5,
+    paddingLeft: spacing.md,
+    borderBottomLeftRadius: spacing.sm,
+    borderBottomRightRadius: spacing.sm,
+    marginHorizontal: spacing.xs,
   },
   modelLabelText: {
     color: theme.mutedForegroundColor,
@@ -549,37 +541,37 @@ const getStyles = theme => StyleSheet.create({
     fontSize: 13
   },
   loadingContainer: {
-    marginVertical: 25,
+    marginVertical: spacing.xxl,
     justifyContent: 'center',
     flexDirection: 'row',
     alignItems: 'center'
   },
   image: {
-    width: width - 10,
-    height: width - 10,
-    marginTop: 5,
-    marginHorizontal: 5,
-    borderRadius: 8,
+    width: width - spacing.md,
+    height: width - spacing.md,
+    marginTop: spacing.xs,
+    marginHorizontal: spacing.xs,
+    borderRadius: spacing.sm,
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
   },
   promptTextContainer: {
     flex: 1,
     alignItems: 'flex-end',
-    marginRight: 5,
-    marginLeft: 24,
-    marginBottom: 5
+    marginRight: spacing.xs,
+    marginLeft: spacing.xxl,
+    marginBottom: spacing.xs,
   },
   promptTextWrapper: {
-    borderRadius: 8,
+    borderRadius: spacing.sm,
     borderTopRightRadius: 0,
     backgroundColor: theme.tintColor,
   },
   promptText: {
     color: theme.tintTextColor,
     fontFamily: theme.regularFont,
-    paddingVertical: 5,
-    paddingHorizontal: 9,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
     fontSize: 16
   },
   container: {
@@ -590,21 +582,13 @@ const getStyles = theme => StyleSheet.create({
     flex: 1,
   },
   scrollContainer: {
-    paddingTop: 10
-  },
-  chatInputContainer: {
-    paddingTop: 5,
-    borderColor: theme.borderColor,
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingBottom: 5
+    paddingTop: spacing.md,
   },
   midButtonStyle: {
     flex: 1,
     flexDirection: 'row',
-    paddingHorizontal: 15,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
     borderRadius: 99,
     backgroundColor: theme.tintColor,
     justifyContent: 'center',
@@ -612,26 +596,9 @@ const getStyles = theme => StyleSheet.create({
   },
   midButtonText: {
     color: theme.tintTextColor,
-    marginLeft: 10,
+    marginLeft: spacing.md,
     fontFamily: theme.boldFont,
     fontSize: 16
-  },
-  attachButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'center',
-    borderWidth: 1,
-    borderColor: theme.borderColor,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 99,
-    marginBottom: 8
-  },
-  attachButtonText: {
-    color: theme.textColor,
-    marginLeft: 8,
-    fontFamily: theme.mediumFont,
-    fontSize: 14
   },
   midChatInputWrapper: {
     flex: 1,
@@ -640,62 +607,31 @@ const getStyles = theme => StyleSheet.create({
   },
   midChatInputContainer: {
     width: '100%',
-    paddingTop: 5,
-    paddingBottom: 5
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.xs,
   },
   midInput: {
-    marginBottom: 8,
+    marginBottom: spacing.sm,
     borderWidth: 1,
-    paddingHorizontal: 25,
-    marginHorizontal: 10,
-    paddingVertical: 15,
+    paddingHorizontal: spacing.xxl,
+    marginHorizontal: spacing.md,
+    paddingVertical: spacing.lg,
     borderRadius: 99,
     color: theme.textColor,
     borderColor: theme.borderColor,
     fontFamily: theme.mediumFont,
   },
-  iconContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 99,
-    color: theme.textColor,
-    marginHorizontal: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 21,
-    paddingRight: 39,
-    borderColor: theme.borderColor,
-    fontFamily: theme.semiBoldFont,
+  clearButton: {
+    marginLeft: spacing.md,
   },
   attachIconButton: {
-    marginRight: 8,
-    padding: 6,
-    borderRadius: 99,
-    borderWidth: 1,
-    borderColor: theme.borderColor
+    marginRight: spacing.sm,
   },
   bottomButtonStyle: {
-    marginVertical: 5,
-    flexDirection: 'row',
-    marginHorizontal: 6,
-    paddingHorizontal: 7,
-    paddingVertical: 7,
-    borderRadius: 4,
-    backgroundColor: theme.tintColor,
-    justifyContent: 'center',
-    alignItems: 'center'
+    marginVertical: spacing.xs,
+    marginHorizontal: spacing.sm,
   },
   buttonStyle: {
-    marginRight: 14,
-    padding: 5,
-    borderRadius: 99,
-    backgroundColor: theme.tintColor
-  },
-  buttonText: {
-    color: theme.textColor,
-    fontFamily: theme.mediumFont,
+    marginRight: spacing.lg,
   },
 })

@@ -4,69 +4,28 @@ import {
   StyleSheet,
   TouchableHighlight,
   ScrollView,
-  Dimensions,
-  Image
 } from 'react-native'
 import { useContext } from 'react'
-import { AppContext, ThemeContext } from '../context'
-import {
-  AnthropicIcon,
-  GeminiIcon,
-  OpenAIIcon
- } from '../components/index'
-import FontAwesome from '@expo/vector-icons/FontAwesome5'
-import { IIconProps } from '../../types'
-import { MODELS, IMAGE_MODELS } from '../../constants'
+import { ThemeContext } from '../context'
 import * as themes from '../theme'
+import { spacing } from '../theme'
 
-const { width } = Dimensions.get('window')
-const models = Object.values(MODELS)
-const imageModels = Object.values(IMAGE_MODELS)
-const _themes = Object.values(themes).map(v => ({
-  name: v.name,
-  label: v.label
+const _themes = Object.values(themes).filter(v => typeof v === 'object' && v !== null && 'name' in v).map(v => ({
+  name: (v as any).name,
+  label: (v as any).label
 }))
 
 export function Settings() {
   const { theme, setTheme, themeName } = useContext(ThemeContext)
-  const {
-    chatType,
-    setChatType,
-    setImageModel,
-    imageModel,
-  } = useContext(AppContext)
-
   const styles = getStyles(theme)
-
-  function renderIcon({
-    type, props
-  }: IIconProps) {
-    if (type.includes('claude')) {
-      return <AnthropicIcon {...props} />
-    }
-    if (type.includes('gpt')) {
-      return <OpenAIIcon {...props} />
-    }
-    if (type.includes('gemini')) {
-      return <GeminiIcon{...props} />
-    }
-    if (type.includes('nanoBanana')) {
-      return <GeminiIcon{...props} />
-    }
-    return <GeminiIcon{...props} />
-  }
 
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
     >
-      <View
-        style={styles.titleContainer}
-      >
-        <Text
-            style={styles.mainText}
-        >Theme</Text>
+      <View style={styles.titleContainer}>
+        <Text style={styles.mainText}>Theme</Text>
       </View>
       {
         _themes.map((value, index) => (
@@ -76,6 +35,9 @@ export function Settings() {
             onPress={() => {
               setTheme(value.label)
             }}
+            accessibilityLabel={`Select ${value.name} theme`}
+            accessibilityRole="button"
+            accessibilityState={{ selected: themeName === value.label }}
           >
             <View
               style={{
@@ -85,7 +47,7 @@ export function Settings() {
             >
             <Text
               style={{
-                ...styles.chatTypeText,
+                ...styles.optionText,
                 ...getDynamicTextStyle(themeName, value.label, theme)
               }}
             >
@@ -95,91 +57,12 @@ export function Settings() {
         </TouchableHighlight>
         ))
       }
-      <View
-        style={styles.titleContainer}
-      >
-      <Text
-          style={styles.mainText}
-        >Chat Model</Text>
+      <View style={styles.titleContainer}>
+        <Text style={styles.mainText}>Chat Model</Text>
       </View>
-      <View style={styles.buttonContainer}>
-        {
-          models.map((model, index) => {
-            return (
-              <TouchableHighlight
-                key={index}
-                underlayColor='transparent'
-                onPress={() => {
-                  setChatType(model)
-                }}
-              >
-                <View
-                  style={{...styles.chatChoiceButton, ...getDynamicViewStyle(chatType.label, model.label, theme)}}
-                >
-                {
-                  renderIcon({
-                    type: model.label,
-                    props: {
-                      theme,
-                      size: 18,
-                      style: {marginRight: 8},
-                      selected: chatType.label === model.label
-                    }
-                  })
-                }
-                <Text
-                  style={{...styles.chatTypeText, ...getDynamicTextStyle(chatType.label, model.label, theme)}}
-                >
-                  { model.name }
-                </Text>
-              </View>
-            </TouchableHighlight>
-            )
-          })
-        }
-      </View>
-      <View
-        style={styles.titleContainer}
-      >
-      <Text
-          style={styles.mainText}
-        >Image Model</Text>
-      </View>
-      <View style={styles.buttonContainer}>
-        {
-          imageModels.map((model, index) => {
-            return (
-              <TouchableHighlight
-                key={index}
-                underlayColor='transparent'
-                onPress={() => {
-                  setImageModel(model.label)
-                }}
-              >
-                <View
-                  style={{...styles.chatChoiceButton, ...getDynamicViewStyle(imageModel, model.label, theme)}}
-                >
-                {
-                  renderIcon({
-                    type: model.label,
-                    props: {
-                      theme,
-                      size: 18,
-                      style: {marginRight: 8},
-                      color: imageModel === model.label ? theme.tintTextColor : theme.textColor
-                    }
-                  })
-                }
-                <Text
-                  style={{...styles.chatTypeText, ...getDynamicTextStyle(imageModel, model.label, theme)}}
-                >
-                  { model.name }
-                </Text>
-              </View>
-            </TouchableHighlight>
-            )
-          })
-        }
+      <View style={styles.modelInfoContainer}>
+        <Text style={styles.modelText}>ChatGLM 5.0</Text>
+        <Text style={styles.modelSubtext}>Powered by Zhipu AI</Text>
       </View>
     </ScrollView>
   )
@@ -193,7 +76,6 @@ function getDynamicTextStyle(baseType:string, type:string, theme:any) {
   } else return {}
 }
 
-
 function getDynamicViewStyle(baseType:string, type:string, theme:any) {
   if (type === baseType) {
     return {
@@ -203,29 +85,26 @@ function getDynamicViewStyle(baseType:string, type:string, theme:any) {
 }
 
 const getStyles = (theme:any) => StyleSheet.create({
-  buttonContainer: {
-    marginBottom: 20
-  },
   container: {
-    padding: 14,
+    padding: spacing.lg,
     flex: 1,
     backgroundColor: theme.backgroundColor,
-    paddingTop: 10,
+    paddingTop: spacing.md,
   },
   contentContainer: {
     paddingBottom: 40
   },
   titleContainer: {
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    marginTop: 10
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.md,
   },
   chatChoiceButton: {
-    padding: 15,
-    borderRadius: 8,
+    padding: spacing.lg,
+    borderRadius: spacing.sm,
     flexDirection: 'row'
   },
-  chatTypeText: {
+  optionText: {
     fontFamily: theme.semiBoldFont,
     color: theme.textColor
   },
@@ -233,5 +112,23 @@ const getStyles = (theme:any) => StyleSheet.create({
     fontFamily: theme.boldFont,
     fontSize: 18,
     color: theme.textColor
+  },
+  modelInfoContainer: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: theme.tintColor,
+    borderRadius: spacing.sm,
+  },
+  modelText: {
+    fontFamily: theme.semiBoldFont,
+    color: theme.tintTextColor,
+    fontSize: 15,
+  },
+  modelSubtext: {
+    fontFamily: theme.regularFont,
+    color: theme.tintTextColor,
+    fontSize: 12,
+    opacity: 0.8,
+    marginTop: 2,
   },
 })

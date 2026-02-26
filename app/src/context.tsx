@@ -1,5 +1,5 @@
 import { createContext } from 'react'
-import { IMAGE_MODELS, MODELS } from '../constants'
+import { IMAGE_MODELS } from '../constants'
 import { IThemeContext, IAppContext } from '../types'
 
 const ThemeContext = createContext<IThemeContext>({
@@ -9,12 +9,8 @@ const ThemeContext = createContext<IThemeContext>({
 })
 
 const AppContext = createContext<IAppContext>({
-  chatType: MODELS.claudeOpus,
   imageModel: IMAGE_MODELS.nanoBanana.label,
-  setChatType: () => null,
-  handlePresentModalPress: () => null,
   setImageModel: () => null,
-  closeModal: () => null,
 })
 
 export {

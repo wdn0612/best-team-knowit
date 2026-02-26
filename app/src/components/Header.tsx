@@ -1,50 +1,53 @@
 import {
-  StyleSheet, View, TouchableHighlight
+  StyleSheet, View, Text
 } from 'react-native'
 import { useContext } from 'react'
 import { Icon } from './Icon'
-import { ThemeContext, AppContext } from '../../src/context'
-import FontAwesome from '@expo/vector-icons/FontAwesome5'
+import { ThemeContext } from '../../src/context'
+import { spacing } from '../theme'
+import Ionicons from '@expo/vector-icons/Ionicons'
 
-export function Header() {
+type HeaderProps = {
+  subtitle?: string
+}
+
+export function Header({ subtitle }: HeaderProps) {
   const { theme } = useContext(ThemeContext)
-  const {
-    handlePresentModalPress
-  } = useContext(AppContext)
   const styles = getStyles(theme)
 
   return (
     <View style={styles.container}>
       <Icon size={34} fill={theme.textColor} />
-      <TouchableHighlight
-        style={styles.buttonContainer}
-        underlayColor={'transparent'}
-        activeOpacity={0.6}
-        onPress={handlePresentModalPress}
-      >
-        <FontAwesome
-          name="ellipsis-h"
-          size={20}
-          color={theme.textColor}
-        />
-      </TouchableHighlight>
+      {subtitle ? (
+        <View style={styles.subtitleRow}>
+          <Ionicons name="sparkles-outline" size={12} color={theme.mutedForegroundColor} />
+          <Text style={styles.subtitleText}>{subtitle}</Text>
+        </View>
+      ) : null}
     </View>
   )
 }
 
 function getStyles(theme:any) {
   return StyleSheet.create({
-    buttonContainer: {
-      position: 'absolute', right: 15,
-      padding: 15
-    },
     container: {
-      paddingVertical: 15,
+      paddingVertical: spacing.lg,
       backgroundColor: theme.backgroundColor,
       justifyContent: 'center',
       alignItems: 'center',
       borderBottomWidth: 1,
       borderBottomColor: theme.borderColor
-    }
+    },
+    subtitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: spacing.xs,
+    },
+    subtitleText: {
+      fontFamily: theme.regularFont,
+      fontSize: 12,
+      color: theme.mutedForegroundColor,
+      marginLeft: spacing.xs,
+    },
   })
 }

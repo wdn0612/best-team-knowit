@@ -1,141 +1,75 @@
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/dabit3/react-native-ai)
+# 小知了 - 你的 AI 情绪伙伴
 
-# React Native AI
+每一次倾诉，都值得被温柔以待。
 
-Full stack framework for building cross-platform mobile AI apps supporting LLM real-time / streaming text and chat UIs, image services and natural language to images with multiple models, and image processing.
+小知了是一款 AI 情绪陪伴应用，帮助你在对话中理解自己、记录情绪、收藏触动内心的金句。
 
-![React Native AI](https://i.imgur.com/AOOgBM0.png)
+## 核心功能
 
-> Check out the video tutorial [here](https://www.youtube.com/watch?v=zf3NnTU5pr4)
+- **AI 情绪对话** — 随时和 AI 聊聊你的感受，获得温暖、有共鸣的回应
+- **金句萃取** — 从对话中自动提取触动你的句子，收藏属于你的语录
+- **情绪日记** — 记录每一天的情绪变化，回顾自己的心路历程
 
-## Features
+## 技术栈
 
-- LLM support for [OpenAI](https://openai.com/) GPT-5.2 + GPT-5 mini, [Anthropic](https://anthropic.com) Claude Opus/Sonnet/Haiku 4.5, and [Gemini](https://makersuite.google.com)
-- Image generation with Gemini (Nano Banana)
-- Real-time / streaming responses from all providers
-- Server proxy to easily enable authentication and authorization with auth provider of choice.
-- Theming (comes out of the box with 5 themes) - easily add additional themes with just a few lines of code.
+- **前端**：React Native (Expo)，跨平台支持 iOS 和 Android
+- **后端**：Node.js + Express
+- **AI**：支持多个 LLM 提供商（OpenAI、Anthropic Claude、Gemini），实时流式响应
+- **主题**：内置 5 套主题，支持自定义扩展
 
-![React Native AI Preview](https://i.imgur.com/D4LIVal.png)
+## 快速开始
 
-## Usage
-
-Generate a new project by running:
-
-```sh
-npx rn-ai
-```
-
-Next, either configure your environment variables with the CLI, or do so later.
-
-### Running the app
-
-Change into the app directory and run:
+### 启动客户端
 
 ```sh
+cd app
 npm start
 ```
 
-### Running the server
-
-Change into the server directory and run:
+### 启动服务端
 
 ```sh
+cd server
 npm run dev
 ```
 
-### Environment variables
+### 环境变量
 
-The server environment variables are available in `server/.env.example`. If already not present, update this file name to `.env` and configure server environment variables. Gemini image generation requires `GEMINI_API_KEY`.
+将 `server/.env.example` 复制为 `server/.env`，并填入你的 API Key。
 
-## Theming
+## 项目结构
 
-To add a new theme, open `app/src/theme.ts` and add a new theme with the following configuration:
+```
+├── app/          # React Native 客户端
+│   └── src/
+│       ├── screens/      # 页面（对话、金句、情绪日记等）
+│       ├── components/   # 通用组件
+│       ├── theme.ts      # 主题配置
+│       └── utils.ts      # 工具函数
+├── server/       # Node.js 后端
+│   └── src/
+│       ├── chat/         # AI 对话路由
+│       └── images/       # 图片处理路由
+└── cli/          # CLI 脚手架工具
+```
+
+## 自定义主题
+
+在 `app/src/theme.ts` 中添加新主题：
 
 ```ts
-const christmas = {
-  // extend an existing theme or start from scratch
+const calm = {
   ...lightTheme,
-  name: 'Christmas',
-  label: 'christmas',
-  tintColor: '#ff0000',
-  textColor: '#378b29',
-  tabBarActiveTintColor: '#378b29',
-  tabBarInactiveTintColor: '#ff0000',
-  placeholderTextColor: '#378b29',
+  name: '宁静',
+  label: 'calm',
+  tintColor: '#6B9BD2',
+  textColor: '#3D5A80',
+  tabBarActiveTintColor: '#3D5A80',
+  tabBarInactiveTintColor: '#98C1D9',
+  placeholderTextColor: '#98C1D9',
 }
 ```
 
-At the bottom of the file, export the new theme:
+## License
 
-```ts
-export {
-  lightTheme, darkTheme, hackerNews, miami, vercel, christmas
-}
-```
-
-![React Native AI Themes](https://i.imgur.com/7Gser4F.png)
-
-## Configuring LLM Models
-
-Here is how to add new or remove existing LLM models.
-
-### In the app
-
-You can add or configure a model by updating `MODELS` in `constants.ts`.
-
-For removing models, just remove the models you do not want to support.
-
-For adding models, once the model definition is added to the `MODELS` array, you should update `src/screens/chat.tsx` to support the new model:
-
-1. Create local state to hold new model data
-2. Update `chat()` function to handle new model type
-3. Create `generateModelReponse` function to call new model
-4. Update `getChatType` in `utils.ts` to configure the LLM type that will correspond with your server path.
-5. Render new model in UI
-
-```tsx
-{
-  chatType.label.includes('newModel') && (
-    <FlatList
-      data={newModelReponse.messages}
-      renderItem={renderItem}
-      scrollEnabled={false}
-    />
-  )
-}
-```
-
-### On the server
-
-Create a new file in the `server/src/chat` folder that corresponds to the model type you created in the mobile app. You can probably copy and re-use a lot of the streaming code from the other existing paths to get you started.
-
-Next, update `server/src/chat/chatRouter` to use the new route.
-
-## Configuring Image Models
-
-Here is how to add new or remove existing Image models.
-
-### In the app
-
-You can add or configure a model by updating `IMAGE_MODELS` in `constants.ts`.
-
-For removing models, just remove the models you do not want to support.
-
-For adding models, once the model definition is added to the `IMAGE_MODELS` array, you should update `src/screens/images.tsx` to support the new model.
-
-Main consideration is input. Does the model take text, image, or both as inputs?
-
-The app is configured to handle both, but you must update the `generate` function to pass the values to the API accordingly.
-
-### On the server
-
-#### Gemini (Nano Banana)
-
-Gemini image generation is handled in `server/src/images/gemini.ts`. Configure `GEMINI_API_KEY` and select the Nano Banana image models from the settings screen.
-
-#### Other API providers
-
-Create a new file in `server/src/images/modelName`, update the handler function to handle the new API call.
-
-Next, update `server/src/images/imagesRouter` to use the new route.
+MIT

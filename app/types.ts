@@ -11,17 +11,7 @@ export interface IThemeContext {
   themeName: string
 }
 
-export interface Model {
-  name: string;
-  label: string;
-  icon: any
-}
-
 export interface IAppContext {
-  chatType: Model
-  setChatType: Dispatch<SetStateAction<Model>>
-  handlePresentModalPress: () => void
   setImageModel: Dispatch<SetStateAction<string>>
   imageModel: string,
-  closeModal: () => void,
 }

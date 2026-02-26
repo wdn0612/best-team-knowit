@@ -25,6 +25,16 @@ const fonts = {
   ultraBlackFont: 'Geist-Ultrablack',
 }
 
+export const spacing = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  xxl: 24,
+  xxxl: 32,
+}
+
 const lightTheme = {
   ...fonts,
   name: 'Light',
@@ -40,6 +50,15 @@ const lightTheme = {
   tintTextColor: colors.white,
   tabBarActiveTintColor: colors.black,
   tabBarInactiveTintColor: colors.gray,
+  cardBackgroundColor: 'rgba(0, 0, 0, 0.05)',
+  blockquoteBackgroundColor: 'rgba(0, 0, 0, 0.04)',
+  blockquoteBorderColor: 'rgba(0, 0, 0, 0.25)',
+  codeBackgroundColor: colors.black,
+  codeBorderColor: 'rgba(0, 0, 0, .15)',
+  dividerColor: 'rgba(0, 0, 0, .12)',
+  tableBorderColor: 'rgba(0, 0, 0, .2)',
+  headingAccentColor: '#0281ff',
+  accentPalette: ['#0281ff', '#FF6B6B', '#4ECDC4', '#FFE66D', '#A78BFA'],
 }
 
 const darkTheme = {
@@ -57,6 +76,15 @@ const darkTheme = {
   tintTextColor: colors.white,
   tabBarActiveTintColor: colors.blueTintColor,
   tabBarInactiveTintColor: colors.lightWhite,
+  cardBackgroundColor: 'rgba(255, 255, 255, 0.08)',
+  blockquoteBackgroundColor: 'rgba(255, 255, 255, 0.06)',
+  blockquoteBorderColor: 'rgba(255, 255, 255, 0.3)',
+  codeBackgroundColor: colors.white,
+  codeBorderColor: 'rgba(255, 255, 255, .15)',
+  dividerColor: 'rgba(255, 255, 255, .12)',
+  tableBorderColor: 'rgba(255, 255, 255, .2)',
+  headingAccentColor: '#0281ff',
+  accentPalette: ['#0281ff', '#FF6B9D', '#00D4AA', '#FFD93D', '#C084FC'],
 }
 
 const hackerNews = {
@@ -65,6 +93,8 @@ const hackerNews = {
   label: 'hackerNews',
   backgroundColor: '#e4e4e4',
   tintColor: '#ed702d',
+  headingAccentColor: '#ed702d',
+  accentPalette: ['#ed702d', '#FF6B6B', '#4ECDC4', '#FFE66D', '#A78BFA'],
 }
 
 const miami = {
@@ -74,7 +104,9 @@ const miami = {
   backgroundColor: '#231F20',
   tintColor: colors.lightPink,
   tintTextColor: '#231F20',
-  tabBarActiveTintColor: colors.lightPink
+  tabBarActiveTintColor: colors.lightPink,
+  headingAccentColor: colors.lightPink,
+  accentPalette: [colors.lightPink, '#FF6B9D', '#00D4AA', '#FFD93D', '#C084FC'],
 }
 
 const vercel = {
@@ -86,6 +118,8 @@ const vercel = {
   tintTextColor: colors.white,
   tabBarActiveTintColor: colors.white,
   secondaryTextColor: colors.white,
+  headingAccentColor: '#171717',
+  accentPalette: ['#171717', '#FF6B9D', '#00D4AA', '#FFD93D', '#C084FC'],
 }
 
 const cyberpunk = {
@@ -98,6 +132,10 @@ const cyberpunk = {
   tabBarActiveTintColor: colors.neonCyan,
   tabBarInactiveTintColor: colors.neonMagenta,
   borderColor: 'rgba(0, 240, 255, .3)',
+  headingAccentColor: colors.neonCyan,
+  blockquoteBorderColor: 'rgba(0, 240, 255, .4)',
+  tableBorderColor: 'rgba(0, 240, 255, .3)',
+  accentPalette: [colors.neonCyan, colors.neonMagenta, '#00D4AA', '#FFD93D', '#C084FC'],
 }
 
 const matrix = {
@@ -110,6 +148,10 @@ const matrix = {
   tabBarActiveTintColor: colors.matrixGreen,
   tabBarInactiveTintColor: colors.matrixDarkGreen,
   borderColor: 'rgba(0, 255, 65, .3)',
+  headingAccentColor: colors.matrixGreen,
+  blockquoteBorderColor: 'rgba(0, 255, 65, .4)',
+  tableBorderColor: 'rgba(0, 255, 65, .3)',
+  accentPalette: [colors.matrixGreen, colors.matrixDarkGreen, '#00D4AA', '#FFD93D', '#C084FC'],
 }
 
 export {

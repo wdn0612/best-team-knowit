@@ -1,7 +1,7 @@
-import { useContext, useRef, useCallback } from 'react';
-import { StyleSheet, Text, View, Button } from 'react-native';
+import { useContext } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Chat, Images, Settings } from './screens'
+import { Chat, Journal, Gems, Settings } from './screens'
 import { Header } from './components'
 import FeatherIcon from '@expo/vector-icons/Feather'
 import {
@@ -16,7 +16,7 @@ function MainComponent() {
   const insets = useSafeAreaInsets()
   const { theme } = useContext(ThemeContext)
   const styles = getStyles({ theme, insets })
-  
+
   return (
     <View style={styles.container}>
       <Tab.Navigator
@@ -33,7 +33,7 @@ function MainComponent() {
           name="Chat"
           component={Chat}
           options={{
-            header: () => <Header />,
+            header: () => <Header subtitle="ChatGLM 5.0" />,
             tabBarIcon: ({ color, size }) => (
               <FeatherIcon
                 name="message-circle"
@@ -44,13 +44,27 @@ function MainComponent() {
           }}
         />
         <Tab.Screen
-          name="Images"
-          component={Images}
+          name="Journal"
+          component={Journal}
           options={{
             header: () => <Header />,
             tabBarIcon: ({ color, size }) => (
               <FeatherIcon
-                name="image"
+                name="book"
+                color={color}
+                size={size}
+              />
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="Gems"
+          component={Gems}
+          options={{
+            header: () => <Header />,
+            tabBarIcon: ({ color, size }) => (
+              <FeatherIcon
+                name="hexagon"
                 color={color}
                 size={size}
               />

@@ -1,6 +1,5 @@
 import { DOMAIN } from '../constants'
 import EventSource from 'react-native-sse'
-import { Model } from '../types'
 
 export function getEventSource({
   headers,
@@ -40,14 +39,4 @@ export function getFirstN({ messages, size = 10 } : { size?: number, messages: a
   } else {
     return messages
   }
-}
-
-export function getChatType(type: Model) {
-  if (type.label.includes('gpt')) {
-    return 'gpt'
-  }
-  if (type.label.includes('gemini')) {
-    return 'gemini'
-  }
-  else return 'claude'
 }
