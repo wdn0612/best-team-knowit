@@ -41,7 +41,6 @@ export const claude = asyncHandler(async (req: Request, res: Response) => {
       headers: {
         'Content-Type': 'application/json',
         'anthropic-version': '2023-06-01',
-        'anthropic-beta': 'messages-2023-12-15',
         'x-api-key': process.env.ANTHROPIC_API_KEY || ''
       },
       body: JSON.stringify({
@@ -61,7 +60,7 @@ export const claude = asyncHandler(async (req: Request, res: Response) => {
           break
         }
   
-        let chunk = decoder.decode(value)
+        const chunk = decoder.decode(value)
 
         const lines = chunk.split("\n")
   
