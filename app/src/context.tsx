@@ -1,6 +1,5 @@
 import { createContext } from 'react'
-import { IMAGE_MODELS } from '../constants'
-import { IThemeContext, IAppContext } from '../types'
+import { IThemeContext } from '../types'
 
 const ThemeContext = createContext<IThemeContext>({
   theme: {},
@@ -8,11 +7,6 @@ const ThemeContext = createContext<IThemeContext>({
   themeName: ''
 })
 
-const AppContext = createContext<IAppContext>({
-  imageModel: IMAGE_MODELS.nanoBanana.label,
-  setImageModel: () => null,
-})
-
 export {
-  ThemeContext, AppContext
+  ThemeContext
 }

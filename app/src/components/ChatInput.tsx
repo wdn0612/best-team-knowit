@@ -51,13 +51,14 @@ const getStyles = (theme: any) => StyleSheet.create({
   },
   input: {
     flex: 1,
-    borderWidth: 1,
-    borderRadius: 99,
+    borderWidth: 0,
+    borderRadius: 20,
+    borderCurve: 'continuous',
     color: theme.textColor,
     marginHorizontal: spacing.md,
     paddingVertical: 10,
     paddingHorizontal: spacing.xl,
-    borderColor: theme.borderColor,
+    backgroundColor: theme.cardBackgroundColor,
     fontFamily: theme.semiBoldFont,
   },
 })

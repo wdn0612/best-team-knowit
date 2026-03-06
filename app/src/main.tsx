@@ -1,5 +1,5 @@
 import { useContext } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Chat, Journal, Gems, Settings } from './screens'
 import { Header } from './components'
@@ -9,6 +9,7 @@ import {
   useSafeAreaInsets,
 } from 'react-native-safe-area-context'
 import { ThemeContext } from './context'
+import { BlurView } from 'expo-blur'
 
 const Tab = createBottomTabNavigator()
 
@@ -24,9 +25,30 @@ function MainComponent() {
           tabBarActiveTintColor: theme.tabBarActiveTintColor,
           tabBarInactiveTintColor: theme.tabBarInactiveTintColor,
           tabBarStyle: {
+            position: 'absolute',
             borderTopWidth: 0,
-            backgroundColor: theme.backgroundColor,
+            backgroundColor: 'transparent',
+            paddingBottom: insets.bottom,
+            height: 50 + insets.bottom,
+            ...Platform.select({
+              ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: -2 },
+                shadowOpacity: 0.06,
+                shadowRadius: 8,
+              },
+              android: {
+                elevation: 4,
+              },
+            }),
           },
+          tabBarBackground: () => (
+            <BlurView
+              intensity={60}
+              tint={theme.label === 'light' || theme.label === 'hackerNews' ? 'light' : 'dark'}
+              style={StyleSheet.absoluteFill}
+            />
+          ),
         }}
       >
         <Tab.Screen
@@ -103,7 +125,6 @@ const getStyles = ({ theme, insets } : { theme: any, insets: any}) => StyleSheet
     backgroundColor: theme.backgroundColor,
     flex: 1,
     paddingTop: insets.top,
-    paddingBottom: insets.bottom,
     paddingLeft: insets.left,
     paddingRight: insets.right,
   },

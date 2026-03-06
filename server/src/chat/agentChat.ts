@@ -251,7 +251,7 @@ export const agentChat = asyncHandler(async (req: Request, res: Response) => {
           model: 'glm-5',
           messages,
           stream: true,
-          tools: TOOLS
+          // tools: TOOLS  // 暂时关闭 tools，节省 token
         })
       })
 
@@ -261,8 +261,10 @@ export const agentChat = asyncHandler(async (req: Request, res: Response) => {
     }
 
     res.write('data: [DONE]\n\n')
+    res.end()
   } catch (err) {
     console.log('agentChat error: ', err)
     res.write('data: [DONE]\n\n')
+    res.end()
   }
 })

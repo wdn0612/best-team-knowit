@@ -24,13 +24,14 @@ const getStyles = (theme: any, elevated: boolean) => StyleSheet.create({
   card: {
     backgroundColor: theme.cardBackgroundColor,
     borderRadius: 16,
+    borderCurve: 'continuous',
     padding: spacing.xl,
     ...(elevated ? {
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 12,
-      elevation: 6,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 4,
     } : {}),
   },
 })

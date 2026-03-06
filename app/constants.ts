@@ -12,8 +12,3 @@ const prodUrl = process.env.EXPO_PUBLIC_PROD_API_URL
 const rawDomain = env === 'DEVELOPMENT' ? devUrl : prodUrl
 
 export const DOMAIN = normalizeDomain(rawDomain || devUrl || prodUrl || '')
-
-export const IMAGE_MODELS = {
-  nanoBanana: { name: 'Nano Banana (Gemini Flash Image)', label: 'nanoBanana' },
-  nanoBananaPro: { name: 'Nano Banana Pro (Gemini 3 Pro)', label: 'nanoBananaPro' },
-}

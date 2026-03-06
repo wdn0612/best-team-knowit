@@ -10,8 +10,3 @@ export interface IThemeContext {
   setTheme: Dispatch<SetStateAction<string>>
   themeName: string
 }
-
-export interface IAppContext {
-  setImageModel: Dispatch<SetStateAction<string>>
-  imageModel: string,
-}

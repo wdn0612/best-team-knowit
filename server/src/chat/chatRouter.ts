@@ -1,16 +1,13 @@
 import express from 'express'
-import { claude } from './claude'
-import { gpt } from './gpt'
-import { gemini } from './gemini'
 import { chatglm } from './chatglm'
 import { agentChat } from './agentChat'
+import { validateChatInput } from '../middleware/validate'
+import { chatLimiter, agentLimiter } from '../middleware/rateLimiter'
+import { sseTimeout, connectionLimit } from '../middleware/sseGuard'
 
 const router = express.Router()
 
-router.post('/claude', claude)
-router.post('/gpt', gpt)
-router.post('/gemini', gemini)
-router.post('/chatglm', chatglm)
-router.post('/agent', agentChat)
+router.post('/chatglm', chatLimiter, validateChatInput, sseTimeout, connectionLimit, chatglm)
+router.post('/agent', agentLimiter, validateChatInput, sseTimeout, connectionLimit, agentChat)
 
 export default router

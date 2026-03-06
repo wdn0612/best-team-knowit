@@ -2,6 +2,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const STORAGE_KEY = 'rnai-chat-histories'
 const GEMS_KEY = 'rnai-gems'
+const GEM_CATEGORIES_KEY = 'rnai-gem-categories'
+
+const DEFAULT_CATEGORIES = ['每日灵感', '人生哲学', '技术洞见', '金句', '心态修炼', '效率法则']
 
 export type AssistantBlock =
   | { type: 'thinking'; content: string }
@@ -81,6 +84,17 @@ export async function saveGems(gems: GemCard[]): Promise<void> {
   } catch (e) {
     console.error('saveGems error:', e)
   }
+}
+
+export async function addGem(gem: GemCard): Promise<void> {
+  const gems = await loadGems()
+  gems.unshift(gem)
+  await saveGems(gems)
+}
+
+export async function deleteGem(id: string): Promise<void> {
+  const gems = await loadGems()
+  await saveGems(gems.filter(g => g.id !== id))
 }
 
 export async function loadGems(): Promise<GemCard[]> {

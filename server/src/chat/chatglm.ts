@@ -54,8 +54,10 @@ export const chatglm = asyncHandler(async (req: Request, res: Response) => {
     }
 
     res.write('data: [DONE]\n\n')
+    res.end()
   } catch (err) {
     console.log('chatglm error: ', err)
     res.write('data: [DONE]\n\n')
+    res.end()
   }
 })
