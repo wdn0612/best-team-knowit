@@ -1,8 +1,7 @@
 import { useContext } from 'react';
 import { StyleSheet, View, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Chat, Journal, Gems, Settings } from './screens'
-import { Header } from './components'
+import { Chat, Journal, Gems } from './screens'
 import FeatherIcon from '@expo/vector-icons/Feather'
 import {
   SafeAreaProvider,
@@ -16,14 +15,14 @@ const Tab = createBottomTabNavigator()
 function MainComponent() {
   const insets = useSafeAreaInsets()
   const { theme } = useContext(ThemeContext)
-  const styles = getStyles({ theme, insets })
+  const styles = getStyles({ insets })
 
   return (
     <View style={styles.container}>
       <Tab.Navigator
         screenOptions={{
-          tabBarActiveTintColor: theme.tabBarActiveTintColor,
-          tabBarInactiveTintColor: theme.tabBarInactiveTintColor,
+          tabBarActiveTintColor: '#31444A',
+          tabBarInactiveTintColor: '#96A6AC',
           tabBarStyle: {
             position: 'absolute',
             borderTopWidth: 0,
@@ -44,9 +43,13 @@ function MainComponent() {
           },
           tabBarBackground: () => (
             <BlurView
-              intensity={60}
-              tint={theme.label === 'light' || theme.label === 'hackerNews' ? 'light' : 'dark'}
-              style={StyleSheet.absoluteFill}
+              intensity={40}
+              tint="light"
+              style={[StyleSheet.absoluteFill, {
+                backgroundColor: 'rgba(228,242,240,0.82)',
+                borderTopWidth: 0.5,
+                borderTopColor: 'rgba(255,255,255,0.50)',
+              }]}
             />
           ),
         }}
@@ -55,7 +58,8 @@ function MainComponent() {
           name="Chat"
           component={Chat}
           options={{
-            header: () => <Header subtitle="ChatGLM 5.0" />,
+            headerShown: false,
+            tabBarLabel: '对话',
             tabBarIcon: ({ color, size }) => (
               <FeatherIcon
                 name="message-circle"
@@ -69,7 +73,8 @@ function MainComponent() {
           name="Journal"
           component={Journal}
           options={{
-            header: () => <Header />,
+            headerShown: false,
+            tabBarLabel: '日记',
             tabBarIcon: ({ color, size }) => (
               <FeatherIcon
                 name="book"
@@ -83,24 +88,11 @@ function MainComponent() {
           name="Gems"
           component={Gems}
           options={{
-            header: () => <Header />,
+            headerShown: false,
+            tabBarLabel: '洞察',
             tabBarIcon: ({ color, size }) => (
               <FeatherIcon
-                name="hexagon"
-                color={color}
-                size={size}
-              />
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="Settings"
-          component={Settings}
-          options={{
-            header: () => <Header />,
-            tabBarIcon: ({ color, size }) => (
-              <FeatherIcon
-                name="sliders"
+                name="star"
                 color={color}
                 size={size}
               />
@@ -120,12 +112,9 @@ export function Main() {
   )
 }
 
-const getStyles = ({ theme, insets } : { theme: any, insets: any}) => StyleSheet.create({
+const getStyles = ({ insets } : { insets: any }) => StyleSheet.create({
   container: {
-    backgroundColor: theme.backgroundColor,
+    backgroundColor: '#EAF6F4',
     flex: 1,
-    paddingTop: insets.top,
-    paddingLeft: insets.left,
-    paddingRight: insets.right,
   },
 })

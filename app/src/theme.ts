@@ -1,3 +1,5 @@
+import { Platform } from 'react-native'
+
 const colors = {
   // iOS system colors
   white: '#FFFFFF',
@@ -171,6 +173,78 @@ const matrix = {
   accentPalette: ['#33FF57'],
 }
 
+// 心迹 · 情感陪伴 AI 主题
+// 心迹使用系统字体（SF Pro / PingFang SC），匹配 index.html 的 --font-sans
+// iOS: Use SF Pro Display weight-specific PostScript names so fontFamily alone
+// determines the rendered weight — no need for a separate fontWeight style.
+// This matches index.html which uses -apple-system with font-weight values.
+const xinjiFonts = Platform.OS === 'ios' ? {
+  ultraLightFont: 'SFProDisplay-Ultralight',
+  thinFont: 'SFProDisplay-Thin',
+  lightFont: 'SFProDisplay-Light',
+  regularFont: 'SFProDisplay-Regular',
+  mediumFont: 'SFProDisplay-Medium',
+  semiBoldFont: 'SFProDisplay-Semibold',
+  boldFont: 'SFProDisplay-Bold',
+  blackFont: 'SFProDisplay-Black',
+  ultraBlackFont: 'SFProDisplay-Black',
+} : {
+  ultraLightFont: 'sans-serif-thin',
+  thinFont: 'sans-serif-light',
+  lightFont: 'sans-serif-light',
+  regularFont: 'sans-serif',
+  mediumFont: 'sans-serif-medium',
+  semiBoldFont: 'sans-serif-medium',
+  boldFont: 'sans-serif',
+  blackFont: 'sans-serif',
+  ultraBlackFont: 'sans-serif',
+}
+
+const xinjiTheme = {
+  ...xinjiFonts,
+  // 霞鹜文楷 — 用于洞察卡片、日记正文等需要温度感的场景
+  serifFont: 'LXGWWenKai-Medium',
+  serifMediumFont: 'LXGWWenKai-Medium',
+  name: '心迹',
+  label: 'xinji',
+  textColor: '#304148',
+  secondaryTextColor: '#EDFAF7',
+  mutedForegroundColor: '#6E7F86',
+  backgroundColor: '#EAF6F4',
+  placeholderTextColor: '#96A6AC',
+  secondaryBackgroundColor: '#31444A',
+  borderColor: 'rgba(63,86,92,0.10)',
+  tintColor: '#31444A',
+  tintTextColor: '#EDFAF7',
+  tabBarActiveTintColor: '#31444A',
+  tabBarInactiveTintColor: '#96A6AC',
+  cardBackgroundColor: 'rgba(255,255,255,0.58)',
+  blockquoteBackgroundColor: 'rgba(185,236,227,0.12)',
+  blockquoteBorderColor: '#B9ECE3',
+  codeBackgroundColor: '#E6F3F1',
+  codeBorderColor: 'rgba(63,86,92,0.10)',
+  dividerColor: 'rgba(63,86,92,0.10)',
+  tableBorderColor: 'rgba(63,86,92,0.10)',
+  headingAccentColor: '#31444A',
+  accentPalette: ['#B9ECE3', '#B8D7E8', '#AFC8BA'],
+  // 心迹专属 token
+  gradientTop: '#BFE7EA',
+  gradientBottom: '#EAF6F4',
+  accentMint: '#B9ECE3',
+  accentBlue: '#B8D7E8',
+  accentSage: '#AFC8BA',
+  accentInk: '#31444A',
+  surfaceGlass: 'rgba(255,255,255,0.58)',
+  surfaceGlassStrong: 'rgba(255,255,255,0.70)',
+  surfaceGlassSubtle: 'rgba(255,255,255,0.40)',
+  surfaceSecondary: '#E6F3F1',
+  shadowCool: 'rgba(73,108,116,0.12)',
+  glowWhite: 'rgba(255,255,255,0.70)',
+  aiBubbleBg: 'rgba(255,255,255,0.88)',
+  userBubbleBg: 'rgba(49,68,74,0.78)',
+  userBubbleText: '#EDFAF7',
+}
+
 export {
-  lightTheme, darkTheme, hackerNews, miami, vercel, cyberpunk, matrix
+  lightTheme, darkTheme, hackerNews, miami, vercel, cyberpunk, matrix, xinjiTheme
 }

@@ -1,15 +1,21 @@
 import 'react-native-gesture-handler'
 import './global.css'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { NavigationContainer } from '@react-navigation/native'
 import { Main } from './src/main'
 import { useFonts } from 'expo-font'
 import { ThemeContext } from './src/context'
-import * as themes from './src/theme'
+import { xinjiTheme } from './src/theme'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { ActionSheetProvider } from '@expo/react-native-action-sheet'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { LogBox } from 'react-native'
+import {
+  requestNotificationPermissions,
+  setupNotificationResponseHandler,
+  type CheckInData
+} from './src/notifications'
+import { Onboarding } from './src/screens/Onboarding'
 
 LogBox.ignoreLogs([
   'Key "cancelled" in the image picker result is deprecated and will be removed in SDK 48, use "canceled" instead',
@@ -17,7 +23,9 @@ LogBox.ignoreLogs([
 ])
 
 export default function App() {
-  const [theme, setTheme] = useState<string>('light')
+  const [showOnboarding, setShowOnboarding] = useState(false)
+  const [onboardingChecked, setOnboardingChecked] = useState(false)
+  const navigationRef = useRef<any>(null)
   const [fontsLoaded] = useFonts({
     'Geist-Regular': require('./assets/fonts/Geist-Regular.otf'),
     'Geist-Light': require('./assets/fonts/Geist-Light.otf'),
@@ -27,51 +35,63 @@ export default function App() {
     'Geist-SemiBold': require('./assets/fonts/Geist-SemiBold.otf'),
     'Geist-Thin': require('./assets/fonts/Geist-Thin.otf'),
     'Geist-UltraLight': require('./assets/fonts/Geist-UltraLight.otf'),
-    'Geist-UltraBlack': require('./assets/fonts/Geist-UltraBlack.otf')
+    'Geist-UltraBlack': require('./assets/fonts/Geist-UltraBlack.otf'),
+    'LXGWWenKai-Medium': require('./assets/fonts/LXGWWenKai-Medium.ttf'),
   })
 
-  useEffect(() => {
-    configureStorage()
+  const handleCheckIn = useCallback((data: CheckInData) => {
+    if (navigationRef.current) {
+      navigationRef.current.navigate('Chat', {
+        checkInEvent: data
+      })
+    }
   }, [])
 
-  async function configureStorage() {
+  useEffect(() => {
+    // TODO: remove this line after testing onboarding
+    AsyncStorage.removeItem('rnai-onboarding-done')
+    checkOnboarding()
+    requestNotificationPermissions()
+    const cleanup = setupNotificationResponseHandler(handleCheckIn)
+    return cleanup
+  }, [handleCheckIn])
+
+  async function checkOnboarding() {
     try {
-      const _theme = await AsyncStorage.getItem('rnai-theme')
-      if (_theme) setTheme(_theme)
+      const onboardingDone = await AsyncStorage.getItem('rnai-onboarding-done')
+      if (!onboardingDone) {
+        setShowOnboarding(true)
+      }
+      setOnboardingChecked(true)
     } catch (err) {
-      console.log('error configuring storage', err)
+      console.log('error checking onboarding', err)
+      setOnboardingChecked(true)
     }
   }
 
-  function _setTheme(theme) {
-    setTheme(theme)
-    AsyncStorage.setItem('rnai-theme', theme)
+  async function completeOnboarding() {
+    await AsyncStorage.setItem('rnai-onboarding-done', '1')
+    setShowOnboarding(false)
   }
 
-  if (!fontsLoaded) return null
+  if (!fontsLoaded || !onboardingChecked) return null
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeContext.Provider value={{
-        theme: getTheme(theme),
-        themeName: theme,
-        setTheme: _setTheme
+        theme: xinjiTheme,
+        themeName: 'xinji',
+        setTheme: () => {},
         }}>
-        <ActionSheetProvider>
-          <NavigationContainer>
-            <Main />
-          </NavigationContainer>
-        </ActionSheetProvider>
+        {showOnboarding ? (
+          <Onboarding onComplete={completeOnboarding} />
+        ) : (
+          <ActionSheetProvider>
+            <NavigationContainer ref={navigationRef}>
+              <Main />
+            </NavigationContainer>
+          </ActionSheetProvider>
+        )}
       </ThemeContext.Provider>
     </GestureHandlerRootView>
   )
-}
-
-function getTheme(theme: any) {
-  let current
-  Object.keys(themes).forEach(_theme => {
-    if (_theme.includes(theme)) {
-      current = themes[_theme]
-    }
-  })
-  return current
 }

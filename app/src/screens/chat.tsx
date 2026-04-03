@@ -16,20 +16,22 @@ import {
 } from 'react-native'
 import { BlurView } from 'expo-blur'
 import 'react-native-get-random-values'
-import { useContext, useState, useRef, useEffect } from 'react'
+import { useContext, useState, useRef, useEffect, useCallback } from 'react'
 import { ThemeContext } from '../context'
-import { getEventSource } from '../utils'
+import { getEventSource, clearCompactCache } from '../utils'
 import { saveChatHistory, addGem, AssistantBlock } from '../storage'
+import { extractAndSaveContext, loadDueCheckInEvents, markEventCheckedIn, type LifeEvent } from '../contextStorage'
 import { v4 as uuid } from 'uuid'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
 import Markdown from '@ronradtke/react-native-markdown-display'
-import { ChatInput, Button } from '../components'
+import { ChatInput, Button, GradientBackground, InsightOverlay, TopicSidebar, SettingsSheet } from '../components'
 import { spacing } from '../theme'
+import { ChatHistory } from '../storage'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useRoute } from '@react-navigation/native'
-import * as DropdownMenu from 'zeego/dropdown-menu'
+import { useRoute, useFocusEffect } from '@react-navigation/native'
+import { ActionSheetIOS } from 'react-native'
 
 type Message = {
   user: string
@@ -154,6 +156,17 @@ export function Chat() {
   const [gemText, setGemText] = useState('')
   const [gemCategory, setGemCategory] = useState('')
   const [toastMessage, setToastMessage] = useState('已复制')
+  const [insightOverlayVisible, setInsightOverlayVisible] = useState(false)
+  const [insightOverlayText, setInsightOverlayText] = useState('')
+  const [sidebarVisible, setSidebarVisible] = useState(false)
+  const [settingsVisible, setSettingsVisible] = useState(false)
+  const [keyboardVisible, setKeyboardVisible] = useState(false)
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardWillShow', () => setKeyboardVisible(true))
+    const hideSub = Keyboard.addListener('keyboardWillHide', () => setKeyboardVisible(false))
+    return () => { showSub.remove(); hideSub.remove() }
+  }, [])
 
   const { theme } = useContext(ThemeContext)
   const styles = getStyles(theme)
@@ -180,6 +193,135 @@ export function Chat() {
       }, 100)
     }
   }, [route.params?.restoreChat])
+
+  // Handle check-in from notification tap
+  useEffect(() => {
+    const checkIn = route.params?.checkInEvent
+    if (checkIn?.eventId) {
+      // Start a fresh chat — the AI will know about the event
+      // via the pending events in the context payload
+      const newState = createEmptyChatState()
+      setChatState(newState)
+      setFeedbackState({})
+    }
+  }, [route.params?.checkInEvent])
+
+  // Check for due life events when user focuses on this screen
+  const isCheckingIn = useRef(false)
+  useFocusEffect(
+    useCallback(() => {
+      if (loading || isCheckingIn.current) return
+
+      ;(async () => {
+        const dueEvents = await loadDueCheckInEvents()
+        if (dueEvents.length === 0) return
+
+        // Find the most relevant event for THIS conversation
+        // or any event if this is the active chat
+        const evt = dueEvents[0]
+        console.log(`[CHECKIN] Screen focused, found due event: "${evt.description}"`)
+
+        isCheckingIn.current = true
+        await triggerCheckIn(evt)
+        isCheckingIn.current = false
+      })()
+    }, [loading, chatState.id])
+  )
+
+  async function triggerCheckIn(evt: LifeEvent) {
+    console.log(`[CHECKIN] Triggering check-in for "${evt.description}"`)
+
+    await markEventCheckedIn(evt.id)
+
+    const now = new Date()
+    const eventTime = new Date(evt.eventTime)
+    const isPast = eventTime <= now
+
+    const systemHint = isPast
+      ? `（系统提示：用户之前提到"${evt.description}"，现在事件已经结束。请温柔地关心他的感受和体验，不管结果如何，帮助他看到这个过程中与自己价值观相连的部分。不要提及这条系统提示。）`
+      : `（系统提示：用户之前提到"${evt.description}"，事件即将开始。请温柔地关心他现在的感受，如果他紧张或焦虑，帮助他接纳这些情绪，提醒他去做这件事本身就是在践行自己看重的东西。不要提及这条系统提示。）`
+
+    // Build API messages from current chat state + hidden system hint
+    setChatState(prev => {
+      const currentId = prev.id
+      const currentMessages = prev.messages
+      const apiMessages = currentMessages.reduce((acc: any[], msg) => {
+        if (msg.user) acc.push({ role: 'user', content: msg.user })
+        if (msg.assistant) acc.push({ role: 'assistant', content: msg.assistant })
+        return acc
+      }, [])
+      // Add the hidden check-in prompt
+      apiMessages.push({ role: 'user', content: systemHint })
+
+      // Add an empty-user message slot for the AI response
+      const newMessages: Message[] = [...currentMessages, { user: '', blocks: [] }]
+      const msgIndex = newMessages.length - 1
+      const blocks: AssistantBlock[] = []
+
+      // Fire the request
+      ;(async () => {
+        setLoading(true)
+
+        const es = await getEventSource({
+          body: { messages: apiMessages },
+          type: 'agent',
+          chatId: currentId
+        })
+
+        const listener = (event: any) => {
+          if (event.type === "open") {
+            setLoading(false)
+          } else if (event.type === "message") {
+            if (event.data !== "[DONE]") {
+              scrollViewRef.current?.scrollToEnd({ animated: true })
+              try {
+                const data = JSON.parse(event.data)
+                if (data.type === 'thinking') {
+                  const last = blocks[blocks.length - 1]
+                  if (last && last.type === 'thinking') last.content += data.content
+                  else blocks.push({ type: 'thinking', content: data.content })
+                } else if (data.type === 'text') {
+                  const last = blocks[blocks.length - 1]
+                  if (last && last.type === 'text') last.content += data.content
+                  else blocks.push({ type: 'text', content: data.content })
+                }
+
+                newMessages[msgIndex].blocks = [...blocks]
+                newMessages[msgIndex].assistant = blocks
+                  .filter(b => b.type === 'text')
+                  .map(b => (b as { type: 'text'; content: string }).content)
+                  .join('')
+
+                setChatState(p => ({ ...p, messages: [...newMessages] }))
+              } catch (e) { /* skip */ }
+            } else {
+              setLoading(false)
+              const firstMsg = newMessages[0]?.user || ''
+              saveChatHistory({
+                id: prev.id,
+                modelLabel: MODEL_LABEL,
+                title: firstMsg.slice(0, 30) || `小知了关心你`,
+                messages: JSON.parse(JSON.stringify(
+                  newMessages.map(m => ({ user: m.user, assistant: m.assistant, blocks: m.blocks }))
+                )),
+                createdAt: prev.createdAt,
+                updatedAt: Date.now(),
+              })
+              es.close()
+            }
+          } else if (event.type === "error") {
+            setLoading(false)
+          }
+        }
+
+        es.addEventListener("open", listener)
+        es.addEventListener("message", listener)
+        es.addEventListener("error", listener)
+      })()
+
+      return { ...prev, messages: newMessages }
+    })
+  }
 
   async function chat() {
     if (!input || loading) return
@@ -217,7 +359,8 @@ export function Chat() {
 
     const es = await getEventSource({
       body: { messages: apiMessages },
-      type: 'agent'
+      type: 'agent',
+      chatId: currentId
     })
 
     const listener = (event: any) => {
@@ -306,6 +449,8 @@ export function Chat() {
             createdAt: currentCreatedAt,
             updatedAt: Date.now(),
           })
+          // Extract user context in background (notifications scheduled inside)
+          extractAndSaveContext(currentId, apiMessages).catch(() => {})
           es.close()
         }
       } else if (event.type === "error") {
@@ -334,6 +479,22 @@ export function Chat() {
   async function copyToClipboard(text: string) {
     await Clipboard.setStringAsync(text)
     showToast('已复制')
+  }
+
+  function openInsightOverlay(text: string) {
+    setInsightOverlayText(text)
+    setInsightOverlayVisible(true)
+  }
+
+  async function saveInsight(text: string) {
+    await addGem({
+      id: uuid(),
+      text,
+      category: '洞察时刻',
+      source: 'AI 对话',
+    })
+    setInsightOverlayVisible(false)
+    showToast('已保存到洞察')
   }
 
   function openGemModal(text: string) {
@@ -409,13 +570,14 @@ export function Chat() {
     setChatState(prev => ({ ...prev, messages: newMessages }))
     setEditingIndex(null)
 
-    // Re-send with edited message
+    // Re-send with edited message — clear compact cache since history changed
     setLoading(true)
     textChunkCount.current = 0
     setInput('')
     setTimeout(() => { scrollViewRef.current?.scrollToEnd({ animated: true }) }, 1)
 
     const currentId = chatState.id
+    clearCompactCache(currentId)
     const currentCreatedAt = chatState.createdAt
     const currentMsgIndex = newMessages.length - 1
     const blocks: AssistantBlock[] = []
@@ -430,7 +592,8 @@ export function Chat() {
 
     const es = await getEventSource({
       body: { messages: apiMessages },
-      type: 'agent'
+      type: 'agent',
+      chatId: currentId
     })
 
     const listener = (event: any) => {
@@ -493,6 +656,8 @@ export function Chat() {
             createdAt: currentCreatedAt,
             updatedAt: Date.now(),
           })
+          // Extract user context in background (notifications scheduled inside)
+          extractAndSaveContext(currentId, apiMessages).catch(() => {})
           es.close()
         }
       } else if (event.type === "error") {
@@ -513,6 +678,23 @@ export function Chat() {
     if (loading) return
     setChatState(createEmptyChatState())
     setFeedbackState({})
+  }
+
+  function handleSelectChat(chat: ChatHistory) {
+    setSidebarVisible(false)
+    const messages: Message[] = chat.messages.map((m: any) => ({
+      user: m.user,
+      assistant: m.assistant,
+      blocks: m.blocks || [],
+    }))
+    setChatState({ id: chat.id, messages, createdAt: chat.createdAt })
+    setFeedbackState({})
+    setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: false }), 100)
+  }
+
+  function handleNewChat() {
+    setSidebarVisible(false)
+    clearChat()
   }
 
   function handleLike(index: number) {
@@ -551,6 +733,7 @@ export function Chat() {
 
     return (
       <View style={styles.promptResponse} key={index}>
+        {item.user ? (
         <View style={styles.promptTextContainer}>
           {editingIndex === index ? (
             <View style={styles.editingContainer}>
@@ -576,31 +759,34 @@ export function Chat() {
               </View>
             </View>
           ) : (
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger>
-                <Pressable style={styles.promptTextWrapper}>
-                  <Text style={styles.promptText}>
-                    {item.user}
-                  </Text>
-                </Pressable>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Content>
-                <DropdownMenu.Item key="copy" onSelect={() => handleMenuCopy(item.user)}>
-                  <DropdownMenu.ItemIcon ios={{ name: 'doc.on.doc' }} />
-                  <DropdownMenu.ItemTitle>复制</DropdownMenu.ItemTitle>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item key="edit" onSelect={() => handleMenuEdit(index, item.user)}>
-                  <DropdownMenu.ItemIcon ios={{ name: 'pencil' }} />
-                  <DropdownMenu.ItemTitle>编辑</DropdownMenu.ItemTitle>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item key="gem" onSelect={() => openGemModal(item.user)}>
-                  <DropdownMenu.ItemIcon ios={{ name: 'diamond' }} />
-                  <DropdownMenu.ItemTitle>收藏</DropdownMenu.ItemTitle>
-                </DropdownMenu.Item>
-              </DropdownMenu.Content>
-            </DropdownMenu.Root>
+            <Pressable
+              style={styles.promptTextWrapper}
+              onLongPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+                if (Platform.OS === 'ios') {
+                  ActionSheetIOS.showActionSheetWithOptions(
+                    {
+                      options: ['复制', '编辑', '收藏', '取消'],
+                      cancelButtonIndex: 3,
+                    },
+                    (buttonIndex) => {
+                      if (buttonIndex === 0) handleMenuCopy(item.user)
+                      else if (buttonIndex === 1) handleMenuEdit(index, item.user)
+                      else if (buttonIndex === 2) openGemModal(item.user)
+                    }
+                  )
+                } else {
+                  handleMenuCopy(item.user)
+                }
+              }}
+            >
+              <Text style={styles.promptText}>
+                {item.user}
+              </Text>
+            </Pressable>
           )}
         </View>
+        ) : null}
         {hasBlocks ? (
           <View>
             {aiSelectingIndex === index ? (
@@ -663,6 +849,8 @@ export function Chat() {
                     )
                   }
                   if (block.type === 'text') {
+                    // Detect inline insight pattern: 💡 followed by text
+                    const insightMatch = block.content.match(/💡\s*(.+?)(?:\n|$)/)
                     return (
                       <Pressable
                         key={bIdx}
@@ -670,6 +858,21 @@ export function Chat() {
                         onLongPress={() => handleAIBubbleLongPress(index, allText)}
                       >
                         <Markdown style={markdownStyle as any}>{block.content}</Markdown>
+                        {insightMatch && (
+                          <View style={styles.insightBlock}>
+                            <Text style={styles.insightBlockText}>
+                              <Text style={styles.insightIcon}>💡 </Text>
+                              {insightMatch[1].trim()}
+                            </Text>
+                            <TouchableOpacity
+                              onPress={() => openInsightOverlay(insightMatch[1].trim())}
+                              style={styles.insightSaveBtn}
+                            >
+                              <Ionicons name="star-outline" size={12} color="#31444A" />
+                              <Text style={styles.insightSaveText}>保存洞察</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
                       </Pressable>
                     )
                   }
@@ -767,13 +970,24 @@ export function Chat() {
   }
 
   const callMade = chatState.messages.length > 0
+  const isXinji = theme.label === 'xinji'
 
   return (
     <>
+    <GradientBackground>
+    {/* Chat header bar */}
+    <View style={[styles.chatHeaderBar, { paddingTop: insets.top + 8 }]}>
+      <TouchableOpacity style={styles.chatHeaderIcon} onPress={() => setSidebarVisible(true)}>
+        <Ionicons name="menu-outline" size={20} color="#31444A" />
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.chatHeaderIcon} onPress={() => clearChat()}>
+        <Ionicons name="create-outline" size={20} color="#31444A" />
+      </TouchableOpacity>
+    </View>
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 44 : 0}
+      style={[styles.container, isXinji && { backgroundColor: 'transparent' }]}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
       <ScrollView
         keyboardShouldPersistTaps='handled'
@@ -790,7 +1004,7 @@ export function Chat() {
                   value={input}
                   onChangeText={v => setInput(v)}
                   onSubmit={chat}
-                  placeholder="Message"
+                  placeholder={isXinji ? '想说点什么……' : 'Message'}
                 />
                 <Button
                   variant="primary"
@@ -803,7 +1017,7 @@ export function Chat() {
                     size={22} color={theme.tintTextColor}
                   />
                   <Text style={styles.midButtonText}>
-                    Start chat
+                    {isXinji ? '开始对话' : 'Start chat'}
                   </Text>
                 </Button>
               </View>
@@ -827,13 +1041,13 @@ export function Chat() {
       </ScrollView>
       {
         callMade && (
-          <View style={{ paddingBottom: 50 + insets.bottom }}>
+          <View style={[{ paddingBottom: keyboardVisible ? 0 : 50 + insets.bottom }, isXinji && styles.xinjiInputWrap]}>
             <ChatInput
               value={input}
               onChangeText={v => setInput(v)}
               onSubmit={chat}
-              placeholder="Message"
-              rightAction={
+              placeholder={isXinji ? '想说点什么……' : 'Message'}
+              rightAction={isXinji ? undefined :
                 <Button
                   variant="icon"
                   onPress={chat}
@@ -851,6 +1065,7 @@ export function Chat() {
         )
       }
     </KeyboardAvoidingView>
+    </GradientBackground>
     <Modal
       visible={dislikeModalVisible}
       transparent
@@ -994,6 +1209,24 @@ export function Chat() {
       />
       <Text style={styles.toastText}>{toastMessage}</Text>
     </Animated.View>
+    <InsightOverlay
+      visible={insightOverlayVisible}
+      text={insightOverlayText}
+      onClose={() => setInsightOverlayVisible(false)}
+      onSave={saveInsight}
+    />
+    <TopicSidebar
+      visible={sidebarVisible}
+      currentChatId={chatState.id}
+      onClose={() => setSidebarVisible(false)}
+      onSelectChat={handleSelectChat}
+      onNewChat={handleNewChat}
+      onOpenSettings={() => { setSidebarVisible(false); setTimeout(() => setSettingsVisible(true), 500); }}
+    />
+    <SettingsSheet
+      visible={settingsVisible}
+      onClose={() => setSettingsVisible(false)}
+    />
     </>
   )
 }
@@ -1260,14 +1493,20 @@ const getStyles = (theme: any) => StyleSheet.create({
     marginTop: spacing.md,
   },
   textStyleContainer: {
-    backgroundColor: theme.cardBackgroundColor,
+    backgroundColor: theme.label === 'xinji' ? 'rgba(255,255,255,0.88)' : theme.cardBackgroundColor,
     marginRight: spacing.xxl,
     padding: spacing.xl,
     paddingBottom: 6,
     paddingTop: spacing.xs,
     margin: spacing.md,
-    borderRadius: 18,
+    borderRadius: theme.label === 'xinji' ? 22 : 18,
     borderCurve: 'continuous',
+    ...(theme.label === 'xinji' ? {
+      shadowColor: 'rgba(73,108,116,0.05)',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 1,
+      shadowRadius: 4,
+    } : {}),
   },
   promptTextContainer: {
     flex: 1,
@@ -1278,16 +1517,75 @@ const getStyles = (theme: any) => StyleSheet.create({
     zIndex: 1,
   },
   promptTextWrapper: {
-    borderRadius: 18,
+    borderRadius: theme.label === 'xinji' ? 22 : 18,
     borderCurve: 'continuous',
-    backgroundColor: theme.tintColor,
+    backgroundColor: theme.label === 'xinji' ? 'rgba(49,68,74,0.78)' : theme.tintColor,
   },
   promptText: {
-    color: theme.tintTextColor,
+    color: theme.label === 'xinji' ? '#EDFAF7' : theme.tintTextColor,
     fontFamily: theme.regularFont,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    fontSize: 16
+    paddingVertical: theme.label === 'xinji' ? 11 : spacing.sm,
+    paddingHorizontal: theme.label === 'xinji' ? 16 : spacing.md,
+    fontSize: theme.label === 'xinji' ? 14.5 : 16,
+    lineHeight: theme.label === 'xinji' ? 23 : undefined,
+  },
+  emoRow: {
+    maxHeight: 40,
+  },
+  emoRowContent: {
+    paddingHorizontal: spacing.xl,
+    gap: 8,
+    alignItems: 'center',
+  },
+  emoTag: {
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255,255,255,0.55)',
+  },
+  emoTagXinji: {
+    backgroundColor: 'rgba(255,255,255,0.40)',
+  },
+  emoTagText: {
+    fontSize: 12,
+    color: '#6E7F86',
+  },
+  xinjiInputWrap: {
+    paddingTop: 4,
+  },
+  insightBlock: {
+    marginTop: 10,
+    padding: 10,
+    paddingHorizontal: 14,
+    paddingBottom: 8,
+    backgroundColor: 'rgba(185,236,227,0.12)',
+    borderLeftWidth: 2.5,
+    borderLeftColor: '#B9ECE3',
+    borderTopRightRadius: 14,
+    borderBottomRightRadius: 14,
+  },
+  insightBlockText: {
+    fontSize: 13,
+    lineHeight: 21,
+    color: '#31444A',
+    fontWeight: '500',
+  },
+  insightIcon: {
+    marginRight: 3,
+  },
+  insightSaveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    marginTop: 6,
+    gap: 3,
+  },
+  insightSaveText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#31444A',
+    textDecorationLine: 'underline',
   },
   chatButton: {
     marginRight: spacing.lg,
@@ -1296,11 +1594,26 @@ const getStyles = (theme: any) => StyleSheet.create({
     backgroundColor: theme.backgroundColor,
     flex: 1,
   },
+  chatHeaderBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 8,
+    zIndex: 10,
+  },
+  chatHeaderIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   toast: {
     position: 'absolute',
     bottom: 120,
     alignSelf: 'center',
-    backgroundColor: theme.label === 'light' || theme.label === 'hackerNews'
+    backgroundColor: theme.label === 'light' || theme.label === 'hackerNews' || theme.label === 'xinji'
       ? 'rgba(0,0,0,0.7)'
       : 'rgba(255,255,255,0.18)',
     paddingHorizontal: spacing.lg,
@@ -1309,7 +1622,7 @@ const getStyles = (theme: any) => StyleSheet.create({
     overflow: 'hidden',
   },
   toastText: {
-    color: theme.label === 'light' || theme.label === 'hackerNews' ? '#fff' : theme.textColor,
+    color: theme.label === 'light' || theme.label === 'hackerNews' || theme.label === 'xinji' ? '#fff' : theme.textColor,
     fontSize: 14,
     fontFamily: theme.mediumFont,
   },

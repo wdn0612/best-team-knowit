@@ -1,16 +1,10 @@
 import { Request, Response } from "express"
 import asyncHandler from 'express-async-handler'
+import { buildSystemPrompt } from '../context'
+import type { ContextPayload } from '../context'
 
 const GLM_API = 'https://open.bigmodel.cn/api/paas/v4/chat/completions'
 const MAX_ROUNDS = 5
-
-const SYSTEM_PROMPT = `你是一个智能生活助手，可以帮助用户记录日记和制定计划。
-
-当用户分享了日常经历、感受或心情时，你应该调用 generate_diary 工具来生成一篇结构化的日记。
-当用户请求制定某种计划（如学习计划、健身计划、旅行计划等）时，你应该调用 create_plan 工具来生成一个详细的行动计划。
-对于普通的聊天对话，直接回复即可，不需要调用任何工具。
-
-请用中文回复用户。`
 
 const TOOLS = [
   {
@@ -233,10 +227,37 @@ export const agentChat = asyncHandler(async (req: Request, res: Response) => {
       'Cache-Control': 'no-cache'
     })
 
-    const { messages: userMessages } = req.body
+    const { messages: userMessages, context } = req.body as {
+      messages: any[]
+      context?: ContextPayload
+    }
+
+    // Build system prompt with user context layers
+    const systemPrompt = buildSystemPrompt(
+      context?.userProfile,
+      context?.emotionTrajectory,
+      context?.recentSummaries,
+      context?.pendingEvents
+    )
+
+    console.log(`\n[CHAT] ====== POST /chat/agent ======`)
+    console.log(`[CHAT] User messages: ${userMessages.length}`)
+    userMessages.forEach((m: any, i: number) => {
+      console.log(`[CHAT]   [${i}] ${m.role}: ${m.content?.slice(0, 200)}${m.content?.length > 200 ? '...' : ''}`)
+    })
+    console.log(`[CHAT] Context provided: ${!!context}`)
+    if (context) {
+      console.log(`[CHAT]   profile: ${context.userProfile?.name || '(no name)'}, interests=${context.userProfile?.interests?.length || 0}, goals=${context.userProfile?.goals?.length || 0}`)
+      console.log(`[CHAT]   emotions: ${context.emotionTrajectory?.length || 0} entries`)
+      console.log(`[CHAT]   summaries: ${context.recentSummaries?.length || 0} entries`)
+      console.log(`[CHAT]   pendingEvents: ${context.pendingEvents?.length || 0} events`)
+    }
+    console.log(`[CHAT] ------ System Prompt ------`)
+    console.log(systemPrompt)
+    console.log(`[CHAT] ============================\n`)
 
     const messages: any[] = [
-      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: systemPrompt },
       ...userMessages
     ]
 

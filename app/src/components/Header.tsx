@@ -14,7 +14,22 @@ type HeaderProps = {
 
 export function Header({ subtitle }: HeaderProps) {
   const { theme } = useContext(ThemeContext)
+  const isXinji = theme.label === 'xinji'
   const styles = getStyles(theme)
+
+  if (isXinji) {
+    return (
+      <View style={styles.xinjiContainer}>
+        <Text style={styles.xinjiLogo}>心迹</Text>
+        {subtitle ? (
+          <View style={styles.subtitleRow}>
+            <Ionicons name="sparkles-outline" size={12} color="#6E7F86" />
+            <Text style={styles.xinjiSubtitleText}>{subtitle}</Text>
+          </View>
+        ) : null}
+      </View>
+    )
+  }
 
   return (
     <View style={styles.shadowWrapper}>
@@ -64,6 +79,25 @@ function getStyles(theme:any) {
       fontFamily: theme.regularFont,
       fontSize: 12,
       color: theme.mutedForegroundColor,
+      marginLeft: spacing.xs,
+    },
+    // Xinji styles
+    xinjiContainer: {
+      paddingVertical: spacing.md,
+      paddingTop: spacing.lg,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'transparent',
+    },
+    xinjiLogo: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: '#304148',
+      letterSpacing: 1,
+    },
+    xinjiSubtitleText: {
+      fontSize: 12,
+      color: '#6E7F86',
       marginLeft: spacing.xs,
     },
   })

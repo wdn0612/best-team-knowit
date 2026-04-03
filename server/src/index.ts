@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import chatRouter from './chat/chatRouter'
+import contextRouter from './context/contextRouter'
 import 'dotenv/config'
 import { authMiddleware } from './middleware/auth'
 import { globalLimiter } from './middleware/rateLimiter'
@@ -29,6 +30,7 @@ app.get('/', (req, res) => {
 })
 
 app.use('/chat', authMiddleware, chatRouter)
+app.use('/context', authMiddleware, contextRouter)
 
 app.listen(3050, () => {
   console.log('Server started on port 3050')
