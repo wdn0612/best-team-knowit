@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小知了 - AI 情感陪伴 | 产品作品集</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --mint: #B9ECE3;
+  --blue: #B8D7E8;
+  --sage: #AFC8BA;
+  --ink: #31444A;
+  --bg: #EAF6F4;
+  --surface: rgba(255,255,255,0.58);
+  --surface-strong: rgba(255,255,255,0.78);
+  --text: #304148;
+  --text-muted: #6E7F86;
+  --shadow: rgba(73,108,116,0.12);
+  --gradient-top: #BFE7EA;
+  --gradient-bottom: #EAF6F4;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--text);
+  background: linear-gradient(180deg, var(--gradient-top) 0%, var(--gradient-bottom) 30%, #fff 100%);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- NAV --- */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  background: rgba(234, 246, 244, 0.85);
+  border-bottom: 1px solid rgba(63,86,92,0.08);
+  padding: 0 2rem;
+}
+nav .inner {
+  max-width: 1100px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 56px;
+}
+nav .logo { font-weight: 700; font-size: 1.1rem; color: var(--ink); letter-spacing: -0.02em; }
+nav .links { display: flex; gap: 1.6rem; }
+nav .links a {
+  font-size: 0.85rem; font-weight: 500; color: var(--text-muted);
+  text-decoration: none; transition: color .2s;
+}
+nav .links a:hover, nav .links a.active { color: var(--ink); }
+
+/* --- HERO --- */
+.hero {
+  max-width: 1100px; margin: 0 auto;
+  padding: 5rem 2rem 4rem;
+  text-align: center;
+}
+.hero .badge {
+  display: inline-block;
+  background: var(--surface-strong); border: 1px solid rgba(63,86,92,0.08);
+  border-radius: 100px; padding: 0.35rem 1rem;
+  font-size: 0.8rem; font-weight: 500; color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+.hero h1 {
+  font-size: clamp(2.4rem, 5vw, 3.6rem);
+  font-weight: 800; letter-spacing: -0.03em;
+  color: var(--ink); line-height: 1.15;
+  margin-bottom: 1.2rem;
+}
+.hero .subtitle {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 1.25rem; color: var(--text-muted);
+  max-width: 560px; margin: 0 auto 2rem;
+}
+.hero .stats {
+  display: flex; gap: 2.5rem; justify-content: center; flex-wrap: wrap;
+}
+.hero .stat { text-align: center; }
+.hero .stat .num { font-size: 1.8rem; font-weight: 700; color: var(--ink); }
+.hero .stat .label { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; }
+
+/* --- SECTIONS --- */
+section {
+  max-width: 1100px; margin: 0 auto;
+  padding: 4rem 2rem;
+}
+section .section-tag {
+  display: inline-block;
+  font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-muted); background: var(--mint);
+  padding: 0.3rem 0.8rem; border-radius: 4px;
+  margin-bottom: 0.8rem;
+}
+section h2 {
+  font-size: 1.8rem; font-weight: 700; letter-spacing: -0.02em;
+  color: var(--ink); margin-bottom: 1rem;
+}
+section .section-desc {
+  font-size: 1rem; color: var(--text-muted);
+  max-width: 640px; margin-bottom: 2rem;
+}
+
+/* --- GLASS CARD --- */
+.card {
+  background: var(--surface-strong);
+  border: 1px solid rgba(63,86,92,0.06);
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 2px 16px var(--shadow);
+  transition: transform .25s, box-shadow .25s;
+}
+.card:hover { transform: translateY(-3px); box-shadow: 0 8px 32px var(--shadow); }
+
+/* --- PROBLEM --- */
+.problem-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+.problem-grid .card h3 {
+  font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--ink);
+}
+.problem-grid .card p { font-size: 0.92rem; color: var(--text-muted); }
+.problem-grid .card .icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; margin-bottom: 1rem;
+}
+.icon-pink { background: rgba(247,181,205,0.25); }
+.icon-mint { background: rgba(185,236,227,0.35); }
+.icon-blue { background: rgba(184,215,232,0.35); }
+
+/* --- PERSONA --- */
+.persona-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+.persona-card { text-align: center; padding: 2.5rem 1.5rem; }
+.persona-card .avatar {
+  width: 72px; height: 72px; border-radius: 50%; margin: 0 auto 1rem;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem;
+}
+.persona-card .name { font-weight: 600; font-size: 1.05rem; color: var(--ink); }
+.persona-card .role { font-size: 0.85rem; color: var(--text-muted); margin: 0.3rem 0 0.8rem; }
+.persona-card .needs { font-size: 0.88rem; color: var(--text); text-align: left; }
+.persona-card .needs li { margin-bottom: 0.3rem; }
+
+/* --- JOURNEY --- */
+.journey {
+  display: flex; gap: 0; overflow-x: auto; padding-bottom: 1rem;
+}
+.journey-step {
+  flex: 0 0 220px; text-align: center; position: relative;
+  padding: 1.5rem 1rem;
+}
+.journey-step::after {
+  content: ''; position: absolute; top: 2.8rem; right: -10px;
+  width: 20px; height: 2px; background: var(--mint);
+}
+.journey-step:last-child::after { display: none; }
+.journey-step .step-num {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--ink); color: #fff; font-weight: 600; font-size: 0.85rem;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 0.8rem;
+}
+.journey-step .step-title { font-weight: 600; font-size: 0.95rem; color: var(--ink); margin-bottom: 0.3rem; }
+.journey-step .step-desc { font-size: 0.82rem; color: var(--text-muted); }
+.journey-step .pain {
+  margin-top: 0.6rem; font-size: 0.78rem;
+  color: #c0392b; background: rgba(192,57,43,0.06);
+  padding: 0.3rem 0.6rem; border-radius: 6px; display: inline-block;
+}
+
+/* --- USER STORIES --- */
+.stories-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.2rem;
+}
+.story-card { padding: 1.5rem; }
+.story-card .as { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.4rem; }
+.story-card .want { font-size: 1rem; font-weight: 600; color: var(--ink); margin-bottom: 0.4rem; }
+.story-card .so { font-size: 0.9rem; color: var(--text-muted); }
+
+/* --- FEATURES --- */
+.features-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+.feature-card { padding: 2rem; }
+.feature-card .feature-icon { font-size: 2rem; margin-bottom: 1rem; }
+.feature-card h3 { font-size: 1.15rem; font-weight: 600; color: var(--ink); margin-bottom: 0.5rem; }
+.feature-card p { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.8rem; }
+.feature-card .metric {
+  display: inline-block; font-size: 0.78rem; font-weight: 600;
+  background: var(--mint); color: var(--ink);
+  padding: 0.25rem 0.7rem; border-radius: 100px;
+}
+
+/* --- ARCHITECTURE --- */
+.arch-container {
+  background: var(--surface-strong);
+  border: 1px solid rgba(63,86,92,0.06);
+  border-radius: 16px;
+  padding: 2.5rem;
+  box-shadow: 0 2px 16px var(--shadow);
+}
+.arch-diagram {
+  display: flex; flex-direction: column; gap: 2rem; align-items: center;
+}
+.arch-layer {
+  display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;
+  width: 100%;
+}
+.arch-layer-label {
+  width: 100%; text-align: center;
+  font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--text-muted); margin-bottom: 0.3rem;
+}
+.arch-box {
+  padding: 0.8rem 1.2rem; border-radius: 10px;
+  font-size: 0.85rem; font-weight: 500;
+  text-align: center; min-width: 120px;
+}
+.arch-client { background: rgba(185,236,227,0.35); color: var(--ink); border: 1px solid rgba(185,236,227,0.6); }
+.arch-server { background: rgba(184,215,232,0.35); color: var(--ink); border: 1px solid rgba(184,215,232,0.6); }
+.arch-ai { background: rgba(49,68,74,0.1); color: var(--ink); border: 1px solid rgba(49,68,74,0.15); }
+.arch-arrow {
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted); font-size: 1.2rem;
+}
+
+/* --- TECH STACK --- */
+.stack-row {
+  display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1rem;
+}
+.stack-tag {
+  background: var(--surface-strong); border: 1px solid rgba(63,86,92,0.08);
+  padding: 0.4rem 0.9rem; border-radius: 8px;
+  font-size: 0.82rem; font-weight: 500; color: var(--ink);
+}
+
+/* --- FOOTER --- */
+footer {
+  max-width: 1100px; margin: 0 auto;
+  padding: 3rem 2rem;
+  text-align: center; border-top: 1px solid rgba(63,86,92,0.08);
+}
+footer p { font-size: 0.85rem; color: var(--text-muted); }
+footer a { color: var(--ink); text-decoration: none; font-weight: 500; }
+
+/* --- SCROLL REVEAL --- */
+.reveal {
+  opacity: 0; transform: translateY(24px);
+  transition: opacity .6s ease, transform .6s ease;
+}
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
+/* --- RESPONSIVE --- */
+@media (max-width: 768px) {
+  .hero { padding: 3rem 1.5rem 2.5rem; }
+  section { padding: 2.5rem 1.5rem; }
+  .journey { flex-wrap: wrap; }
+  .journey-step { flex: 0 0 100%; }
+  .journey-step::after { display: none; }
+  nav .links { gap: 1rem; }
+  nav .links a { font-size: 0.78rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="inner">
+    <div class="logo">XiaoZhiLiao</div>
+    <div class="links">
+      <a href="#problem">痛点</a>
+      <a href="#personas">用户画像</a>
+      <a href="#journey">用户旅程</a>
+      <a href="#stories">用户故事</a>
+      <a href="#features">功能特性</a>
+      <a href="#architecture">技术架构</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="badge">AI 情感陪伴应用</div>
+  <h1>小知了</h1>
+  <p class="subtitle">你说的每一句话，都值得被温柔以待。</p>
+  <div class="stats">
+    <div class="stat"><div class="num">4</div><div class="label">核心页面</div></div>
+    <div class="stat"><div class="num">4</div><div class="label">大模型接入</div></div>
+    <div class="stat"><div class="num">8</div><div class="label">自定义主题</div></div>
+    <div class="stat"><div class="num">2</div><div class="label">双平台 (iOS & Android)</div></div>
+  </div>
+</section>
+
+<!-- PROBLEM STATEMENT -->
+<section id="problem" class="reveal">
+  <div class="section-tag">痛点分析</div>
+  <h2>为什么要做这个产品</h2>
+  <p class="section-desc">心理健康支持昂贵、充满偏见且难以获取。人们需要一个安全的空间来日常处理情绪——而不仅仅是在危机时刻。</p>
+  <div class="problem-grid">
+    <div class="card">
+      <div class="icon icon-pink">&#128148;</div>
+      <h3>情绪压抑</h3>
+      <p>大多数人缺少一个无评判的日常情绪宣泄出口。积压的情绪会逐渐演变为慢性压力和焦虑。</p>
+    </div>
+    <div class="card">
+      <div class="icon icon-mint">&#128172;</div>
+      <h3>心理咨询的缺口</h3>
+      <p>专业帮助昂贵且难以获取。预约心理咨询师的平均等待时间长达数周——但情绪不会等。</p>
+    </div>
+    <div class="card">
+      <div class="icon icon-blue">&#128218;</div>
+      <h3>缺乏反思习惯</h3>
+      <p>传统的写日记感觉像做作业。人们想要反思，但没有一个能以对话方式贴近他们的工具。</p>
+    </div>
+  </div>
+</section>
+
+<!-- PERSONAS -->
+<section id="personas" class="reveal">
+  <div class="section-tag">用户画像</div>
+  <h2>我们为谁而建</h2>
+  <p class="section-desc">三种不同的用户原型，拥有重叠的情感需求但处于不同的生活场景。</p>
+  <div class="persona-grid">
+    <div class="card persona-card">
+      <div class="avatar" style="background:rgba(185,236,227,0.3);">&#128105;&#8205;&#128187;</div>
+      <div class="name">焦虑的职场人</div>
+      <div class="role">25-35岁，高压工作，独居</div>
+      <ul class="needs">
+        <li>需要在漫长工作日后的深夜情绪出口</li>
+        <li>想要共情的回应，而不是解决方案</li>
+        <li>重视隐私——不会在社交媒体上分享感受</li>
+      </ul>
+    </div>
+    <div class="card persona-card">
+      <div class="avatar" style="background:rgba(184,215,232,0.3);">&#127891;</div>
+      <div class="name">爱反思的学生</div>
+      <div class="role">18-24岁，探索自我与人际关系</div>
+      <ul class="needs">
+        <li>想要了解反复出现的情绪模式</li>
+        <li>被"金句"所吸引——那些深深引起共鸣的话语</li>
+        <li>偏好原生移动端、设计精美的应用</li>
+      </ul>
+    </div>
+    <div class="card persona-card">
+      <div class="avatar" style="background:rgba(175,200,186,0.3);">&#129506;</div>
+      <div class="name">安静的自愈者</div>
+      <div class="role">30-45岁，正在从人生转折中恢复</div>
+      <ul class="needs">
+        <li>需要心情日记来追踪情绪恢复</li>
+        <li>想要温暖而非冰冷的 AI 陪伴</li>
+        <li>喜欢不同心情下的主题化体验</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- USER JOURNEY -->
+<section id="journey" class="reveal">
+  <div class="section-tag">用户旅程</div>
+  <h2>从初次接触到日常习惯</h2>
+  <p class="section-desc">描绘从下载到成为日常陪伴的情感弧线。</p>
+  <div class="journey">
+    <div class="journey-step">
+      <div class="step-num">1</div>
+      <div class="step-title">新手引导</div>
+      <div class="step-desc">引导式介绍，包含主题选择和个性化设置</div>
+      <div class="pain">痛点："这又是一个聊天机器人吗？"</div>
+    </div>
+    <div class="journey-step">
+      <div class="step-num">2</div>
+      <div class="step-title">第一次对话</div>
+      <div class="step-desc">AI 用温暖和共情回应，建立信任</div>
+      <div class="pain">痛点："它能理解我吗？"</div>
+    </div>
+    <div class="journey-step">
+      <div class="step-num">3</div>
+      <div class="step-title">发现金句</div>
+      <div class="step-desc">AI 提取引起共鸣的语句，用户收藏保存</div>
+    </div>
+    <div class="journey-step">
+      <div class="step-num">4</div>
+      <div class="step-title">心情日记</div>
+      <div class="step-desc">用户记录心情，看到情绪时间线逐步建立</div>
+    </div>
+    <div class="journey-step">
+      <div class="step-num">5</div>
+      <div class="step-title">日常仪式</div>
+      <div class="step-desc">通知提醒和主题切换让习惯持续下去</div>
+    </div>
+  </div>
+</section>
+
+<!-- USER STORIES -->
+<section id="stories" class="reveal">
+  <div class="section-tag">用户故事</div>
+  <h2>用户需要做什么</h2>
+  <div class="stories-grid">
+    <div class="card story-card">
+      <div class="as">作为一个感到压力山大的用户，</div>
+      <div class="want">我希望能进行实时的、充满共情的 AI 对话</div>
+      <div class="so">这样我可以在不被评判的情况下处理情绪，感到被倾听。</div>
+    </div>
+    <div class="card story-card">
+      <div class="as">作为一个喜欢反思的用户，</div>
+      <div class="want">我希望 AI 能从对话中提取"金句"</div>
+      <div class="so">这样我可以收集引起共鸣的话语，日后重新回顾。</div>
+    </div>
+    <div class="card story-card">
+      <div class="as">作为一个关注心理健康的用户，</div>
+      <div class="want">我希望能记录每日心情并在时间线上查看</div>
+      <div class="so">这样我可以识别情绪模式并追踪自己的成长。</div>
+    </div>
+    <div class="card story-card">
+      <div class="as">作为一个注重美感的用户，</div>
+      <div class="want">我希望能在 8 种视觉主题之间切换</div>
+      <div class="so">这样应用的外观能匹配我当前的心情和个性。</div>
+    </div>
+    <div class="card story-card">
+      <div class="as">作为一个有不同偏好的用户，</div>
+      <div class="want">我希望能选择驱动陪伴 AI 的模型</div>
+      <div class="so">这样我能获得最适合自己的对话风格。</div>
+    </div>
+    <div class="card story-card">
+      <div class="as">作为一个初次使用的用户，</div>
+      <div class="want">我希望有引导式的新手教程和话题式对话</div>
+      <div class="so">这样我能感到自在，并了解这个应用能为我做什么。</div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features" class="reveal">
+  <div class="section-tag">功能特性</div>
+  <h2>我们构建了什么</h2>
+  <div class="features-grid">
+    <div class="card feature-card">
+      <div class="feature-icon">&#128172;</div>
+      <h3>AI 情感对话</h3>
+      <p>与共情 AI 进行实时流式对话。支持基于话题的会话，具备上下文管理和对话历史记录功能。</p>
+      <span class="metric">58K 行聊天 UI 代码</span>
+    </div>
+    <div class="card feature-card">
+      <div class="feature-icon">&#128142;</div>
+      <h3>金句提取</h3>
+      <p>自动识别并提取对话中引起共鸣的语句。用户可以保存、浏览和分享自己的智慧语录收藏。</p>
+      <span class="metric">洞察浮层 + 收藏视图</span>
+    </div>
+    <div class="card feature-card">
+      <div class="feature-icon">&#128214;</div>
+      <h3>心情日记</h3>
+      <p>每日情绪记录配合可视化时间线。追踪心情趋势变化，帮助用户识别情绪健康的规律。</p>
+      <span class="metric">时间线 + 趋势可视化</span>
+    </div>
+    <div class="card feature-card">
+      <div class="feature-icon">&#127912;</div>
+      <h3>8 款自定义主题</h3>
+      <p>从舒缓的"心迹"到前卫的"赛博朋克"和怀旧的"黑客帝国"——每个主题都以独特的配色和字体彻底改变应用体验。</p>
+      <span class="metric">8 款主题含自定义字体</span>
+    </div>
+    <div class="card feature-card">
+      <div class="feature-icon">&#129302;</div>
+      <h3>多模型后端</h3>
+      <p>可插拔的 AI 提供商架构，支持 OpenAI、Anthropic Claude、Google Gemini 和 ChatGLM。基于流式的响应带来实时体验。</p>
+      <span class="metric">支持 4 家大模型</span>
+    </div>
+    <div class="card feature-card">
+      <div class="feature-icon">&#128241;</div>
+      <h3>跨平台原生应用</h3>
+      <p>使用 React Native + Expo 构建，在 iOS 和 Android 上实现真正的原生性能。包含触觉反馈、模糊效果和平台专属 UI 适配。</p>
+      <span class="metric">单一代码库覆盖 iOS + Android</span>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section id="architecture" class="reveal">
+  <div class="section-tag">技术架构</div>
+  <h2>系统设计</h2>
+  <p class="section-desc">简洁的客户端-服务端架构，支持可插拔的 AI 提供商和本地优先的数据持久化。</p>
+  <div class="arch-container">
+    <div class="arch-diagram">
+      <div class="arch-layer">
+        <div class="arch-layer-label">客户端层 (React Native + Expo)</div>
+        <div class="arch-box arch-client">对话页面</div>
+        <div class="arch-box arch-client">金句页面</div>
+        <div class="arch-box arch-client">日记页面</div>
+        <div class="arch-box arch-client">设置</div>
+        <div class="arch-box arch-client">新手引导</div>
+      </div>
+      <div class="arch-arrow">&#8595; SSE 流式传输 + REST &#8595;</div>
+      <div class="arch-layer">
+        <div class="arch-layer-label">服务端层 (Node.js + Express)</div>
+        <div class="arch-box arch-server">对话路由</div>
+        <div class="arch-box arch-server">智能体对话</div>
+        <div class="arch-box arch-server">上下文管理</div>
+        <div class="arch-box arch-server">文件处理</div>
+        <div class="arch-box arch-server">速率限制</div>
+      </div>
+      <div class="arch-arrow">&#8595; 提供商适配器 &#8595;</div>
+      <div class="arch-layer">
+        <div class="arch-layer-label">AI 提供商层</div>
+        <div class="arch-box arch-ai">OpenAI</div>
+        <div class="arch-box arch-ai">Anthropic Claude</div>
+        <div class="arch-box arch-ai">Google Gemini</div>
+        <div class="arch-box arch-ai">ChatGLM</div>
+      </div>
+    </div>
+    <div style="margin-top:2rem;">
+      <div class="arch-layer-label" style="text-align:left;">技术栈</div>
+      <div class="stack-row">
+        <span class="stack-tag">React Native 0.81</span>
+        <span class="stack-tag">Expo 54</span>
+        <span class="stack-tag">TypeScript</span>
+        <span class="stack-tag">NativeWind / Tailwind</span>
+        <span class="stack-tag">Reanimated</span>
+        <span class="stack-tag">Bottom Sheet</span>
+        <span class="stack-tag">Node.js</span>
+        <span class="stack-tag">Express</span>
+        <span class="stack-tag">SSE Streaming</span>
+        <span class="stack-tag">Helmet + CORS</span>
+        <span class="stack-tag">Multer</span>
+        <span class="stack-tag">AsyncStorage</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>由 <a href="https://github.com/wdn0612" target="_blank">wdn0612</a> 构建 &mdash; <a href="https://github.com/wdn0612/best-team-knowit" target="_blank">在 GitHub 上查看</a></p>
+</footer>
+
+<!-- SCROLL REVEAL -->
+<script>
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// Active nav link
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('nav .links a');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => {
+    if (window.scrollY >= s.offsetTop - 100) current = s.getAttribute('id');
+  });
+  navLinks.forEach(a => {
+    a.classList.remove('active');
+    if (a.getAttribute('href') === '#' + current) a.classList.add('active');
+  });
+});
+</script>
+
+</body>
+</html>
