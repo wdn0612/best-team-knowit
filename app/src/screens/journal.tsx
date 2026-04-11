@@ -1,9 +1,9 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Pressable, Platform, Animated, Dimensions, Easing } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Pressable, Platform, Animated, Dimensions, Easing, TextInput, KeyboardAvoidingView } from 'react-native'
 import { useContext, useState, useCallback, useRef, useEffect } from 'react'
 import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import Markdown from '@ronradtke/react-native-markdown-display'
 import { ThemeContext } from '../context'
-import { loadAllChatHistories, ChatHistory } from '../storage'
+import { loadAllChatHistories, saveChatHistory, ChatHistory } from '../storage'
 import { Card, GlassCard, GradientBackground } from '../components'
 import { spacing } from '../theme'
 import Ionicons from '@expo/vector-icons/Ionicons'
@@ -35,11 +35,15 @@ export function Journal() {
   const [entries, setEntries] = useState<ChatHistory[]>([])
   const [selectedEntry, setSelectedEntry] = useState<ChatHistory | null>(null)
   const [detailModalVisible, setDetailModalVisible] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editText, setEditText] = useState('')
   const detailSlideAnim = useRef(new Animated.Value(Dimensions.get('window').height)).current
   const navigation = useNavigation<any>()
 
   function openDetail(entry: ChatHistory) {
     setSelectedEntry(entry)
+    setIsEditing(false)
+    setEditText('')
     setDetailModalVisible(true)
     detailSlideAnim.setValue(Dimensions.get('window').height)
     Animated.spring(detailSlideAnim, {
@@ -51,6 +55,7 @@ export function Journal() {
   }
 
   function closeDetail() {
+    setIsEditing(false)
     Animated.timing(detailSlideAnim, {
       toValue: Dimensions.get('window').height,
       duration: 280,
@@ -60,6 +65,53 @@ export function Journal() {
       setDetailModalVisible(false)
       setSelectedEntry(null)
     })
+  }
+
+  function startEditing() {
+    if (!selectedEntry) return
+    // Populate editText with the full assistant content of the entry
+    const fullText = selectedEntry.messages
+      .filter((msg: any) => msg.assistant)
+      .map((msg: any) => msg.assistant)
+      .join('\n\n')
+    setEditText(fullText)
+    setIsEditing(true)
+  }
+
+  async function saveEdit() {
+    if (!selectedEntry) return
+    // Normalize messages so the full edited text lives only in messages[0].assistant.
+    // This keeps startEditing() round-trip consistent (it concatenates all assistant fields).
+    // Rules:
+    //   - messages[0]: keep user content, set assistant = editText
+    //   - messages[i >= 1]: if has non-empty user, keep it but clear assistant to '';
+    //                       if no user content, drop the message entirely
+    const normalizedMessages = selectedEntry.messages
+      .map((msg: any, idx: number) => {
+        if (idx === 0) {
+          return { ...msg, assistant: editText }
+        }
+        // For subsequent messages: keep only if they have user content
+        const hasUser = msg.user && (msg.user as string).trim().length > 0
+        if (!hasUser) return null
+        return { ...msg, assistant: '' }
+      })
+      .filter(Boolean)
+
+    // Edge case: if messages was empty, create a minimal entry
+    const finalMessages = normalizedMessages.length > 0
+      ? normalizedMessages
+      : [{ user: '', assistant: editText, timestamp: Date.now() }]
+
+    const updatedEntry: ChatHistory = {
+      ...selectedEntry,
+      messages: finalMessages,
+      updatedAt: Date.now(),
+    }
+    await saveChatHistory(updatedEntry)
+    setSelectedEntry(updatedEntry)
+    setEntries(prev => prev.map(e => (e.id === updatedEntry.id ? updatedEntry : e)))
+    setIsEditing(false)
   }
 
   useFocusEffect(
@@ -198,9 +250,15 @@ export function Journal() {
                       <Ionicons name="chevron-back" size={18} color="#31444A" />
                       <Text style={styles.detailBackText}>返回</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => { const entry = selectedEntry; closeDetail(); setTimeout(() => viewOriginalChat(entry), 300); }}>
-                      <Text style={styles.detailEditText}>编辑</Text>
-                    </TouchableOpacity>
+                    {isEditing ? (
+                      <TouchableOpacity onPress={saveEdit}>
+                        <Text style={styles.detailSaveText}>保存</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity onPress={startEditing}>
+                        <Text style={styles.detailEditText}>编辑</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                   <View style={styles.detailContent}>
                     <Text style={styles.detailDate}>{formatDate(selectedEntry.updatedAt)}</Text>
@@ -210,21 +268,40 @@ export function Journal() {
                         {detectEmotion(getSummary(selectedEntry) + (selectedEntry.title || ''))}
                       </Text>
                     </View>
-                    {selectedEntry.messages.map((msg: any, idx: number) => (
-                      <View key={idx} style={styles.detailParagraph}>
-                        {msg.assistant ? (
-                          <Text style={styles.detailBodySerifText}>{msg.assistant}</Text>
-                        ) : null}
-                      </View>
-                    ))}
-                    <TouchableOpacity
-                      style={styles.detailOriginalLink}
-                      onPress={() => { const entry = selectedEntry; closeDetail(); setTimeout(() => viewOriginalChat(entry), 300); }}
-                    >
-                      <Ionicons name="chatbubble-outline" size={14} color="#31444A" />
-                      <Text style={styles.detailOriginalText}>查看原始对话</Text>
-                      <Ionicons name="chevron-forward" size={14} color="#96A6AC" />
-                    </TouchableOpacity>
+                    {isEditing ? (
+                      <KeyboardAvoidingView
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                      >
+                        <TextInput
+                          style={styles.detailEditInput}
+                          value={editText}
+                          onChangeText={setEditText}
+                          multiline
+                          autoFocus
+                          textAlignVertical="top"
+                          placeholder="编辑日记内容..."
+                          placeholderTextColor="#96A6AC"
+                        />
+                      </KeyboardAvoidingView>
+                    ) : (
+                      selectedEntry.messages.map((msg: any, idx: number) => (
+                        <View key={idx} style={styles.detailParagraph}>
+                          {msg.assistant ? (
+                            <Text style={styles.detailBodySerifText}>{msg.assistant}</Text>
+                          ) : null}
+                        </View>
+                      ))
+                    )}
+                    {!isEditing && (
+                      <TouchableOpacity
+                        style={styles.detailOriginalLink}
+                        onPress={() => { const entry = selectedEntry; closeDetail(); setTimeout(() => viewOriginalChat(entry), 300); }}
+                      >
+                        <Ionicons name="chatbubble-outline" size={14} color="#31444A" />
+                        <Text style={styles.detailOriginalText}>查看原始对话</Text>
+                        <Ionicons name="chevron-forward" size={14} color="#96A6AC" />
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </ScrollView>
               </GradientBackground>
@@ -485,6 +562,25 @@ const getStyles = (theme: any) => StyleSheet.create({
     fontSize: 13,
     color: '#31444A',
     fontWeight: '500',
+  },
+  detailSaveText: {
+    fontSize: 13,
+    color: '#2A7A6A',
+    fontWeight: '700',
+  },
+  detailEditInput: {
+    fontSize: 15,
+    lineHeight: 29,
+    color: '#304148',
+    letterSpacing: 0.3,
+    fontFamily: 'LXGWWenKai-Medium',
+    backgroundColor: 'rgba(255,255,255,0.55)',
+    borderRadius: 12,
+    borderWidth: 0.5,
+    borderColor: 'rgba(49,68,74,0.2)',
+    padding: 12,
+    minHeight: 200,
+    marginBottom: spacing.lg,
   },
   detailContent: {
     paddingHorizontal: spacing.xxl,
