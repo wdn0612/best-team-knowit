@@ -256,9 +256,15 @@ export function buildSystemPrompt(
   profile?: UserProfile,
   emotionTrajectory?: EmotionEntry[],
   recentSummaries?: ConversationSummary[],
-  pendingEvents?: LifeEvent[]
+  pendingEvents?: LifeEvent[],
+  localTime?: string
 ): string {
   let prompt = BASE_PERSONA
+
+  // Inject local time so the model chooses greetings and time-of-day references correctly
+  if (localTime) {
+    prompt += `\n\n【当前时间】${localTime}\n请根据当前时间选择合适的问候语和时间性表达（如早安/下午好/晚安），不要假设时间段。`
+  }
 
   if (profile) {
     prompt += buildProfileSection(profile)

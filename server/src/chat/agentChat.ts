@@ -237,7 +237,8 @@ export const agentChat = asyncHandler(async (req: Request, res: Response) => {
       context?.userProfile,
       context?.emotionTrajectory,
       context?.recentSummaries,
-      context?.pendingEvents
+      context?.pendingEvents,
+      context?.localTime
     )
 
     console.log(`\n[CHAT] ====== POST /chat/agent ======`)
