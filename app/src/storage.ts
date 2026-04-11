@@ -109,3 +109,43 @@ export async function loadGems(): Promise<GemCard[]> {
     return getDefaultGems()
   }
 }
+
+// ---------------------------------------------------------------------------
+// Device-level onboarding completion flag
+//
+// DEVICE-SCOPED (not user-scoped): this flag is written to AsyncStorage which
+// is tied to the app install on the device. It persists across logout/re-login
+// and is only cleared when the app is uninstalled or storage is manually wiped.
+// It records the ISO timestamp of when the 5-question flow was first completed
+// on this device, ensuring the flow is never shown again on the same device.
+// ---------------------------------------------------------------------------
+
+const ONBOARDING_QUESTIONS_COMPLETED_AT_KEY = 'onboarding_questions_completed_at'
+
+/**
+ * Mark the 5-question onboarding flow as completed on this device.
+ * Writes the current ISO timestamp. Idempotent — safe to call multiple times.
+ */
+export async function markOnboardingQuestionsCompleted(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(
+      ONBOARDING_QUESTIONS_COMPLETED_AT_KEY,
+      new Date().toISOString()
+    )
+  } catch (e) {
+    console.error('markOnboardingQuestionsCompleted error:', e)
+  }
+}
+
+/**
+ * Returns the ISO timestamp string if the 5-question flow was previously
+ * completed on this device, or null if it has not been completed yet.
+ */
+export async function getOnboardingQuestionsCompletedAt(): Promise<string | null> {
+  try {
+    return await AsyncStorage.getItem(ONBOARDING_QUESTIONS_COMPLETED_AT_KEY)
+  } catch (e) {
+    console.error('getOnboardingQuestionsCompletedAt error:', e)
+    return null
+  }
+}

@@ -16,6 +16,10 @@ import {
   type CheckInData
 } from './src/notifications'
 import { Onboarding } from './src/screens/Onboarding'
+import {
+  getOnboardingQuestionsCompletedAt,
+  markOnboardingQuestionsCompleted,
+} from './src/storage'
 
 LogBox.ignoreLogs([
   'Key "cancelled" in the image picker result is deprecated and will be removed in SDK 48, use "canceled" instead',
@@ -48,8 +52,6 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    // TODO: remove this line after testing onboarding
-    AsyncStorage.removeItem('rnai-onboarding-done')
     checkOnboarding()
     requestNotificationPermissions()
     const cleanup = setupNotificationResponseHandler(handleCheckIn)
@@ -58,8 +60,11 @@ export default function App() {
 
   async function checkOnboarding() {
     try {
-      const onboardingDone = await AsyncStorage.getItem('rnai-onboarding-done')
-      if (!onboardingDone) {
+      // Device-level flag: once the 5-question flow is completed on this device
+      // it will never show again, even after logout/re-login.
+      // See storage.ts — ONBOARDING_QUESTIONS_COMPLETED_AT_KEY for details.
+      const completedAt = await getOnboardingQuestionsCompletedAt()
+      if (!completedAt) {
         setShowOnboarding(true)
       }
       setOnboardingChecked(true)
@@ -70,7 +75,8 @@ export default function App() {
   }
 
   async function completeOnboarding() {
-    await AsyncStorage.setItem('rnai-onboarding-done', '1')
+    // Persist device-level completion flag with ISO timestamp
+    await markOnboardingQuestionsCompleted()
     setShowOnboarding(false)
   }
 
