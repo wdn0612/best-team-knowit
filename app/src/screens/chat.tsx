@@ -1454,25 +1454,6 @@ const getStyles = (theme: any) => StyleSheet.create({
   scrollContentContainer: {
     flex: 1,
   },
-  midButtonStyle: {
-    marginHorizontal: spacing.lg,
-  },
-  midButtonText: {
-    color: theme.tintTextColor,
-    marginLeft: spacing.md,
-    fontFamily: theme.boldFont,
-    fontSize: 16
-  },
-  midChatInputWrapper: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  midChatInputContainer: {
-    width: '100%',
-    paddingTop: spacing.xs,
-    paddingBottom: spacing.xs,
-  },
   loadingContainer: {
     marginTop: spacing.xxl
   },
