@@ -1,7 +1,8 @@
 import { Text, View, StyleSheet, ScrollView, TouchableOpacity, Modal, Dimensions, Platform, Animated, Pressable, Easing, Alert } from 'react-native'
 import { useContext, useState, useCallback, useRef, useEffect } from 'react'
-import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
+import * as MediaLibrary from 'expo-media-library'
+import { captureRef } from 'react-native-view-shot'
 import { ThemeContext } from '../context'
 import { spacing } from '../theme'
 import { GemCard, loadGems, deleteGem, getDefaultGems } from '../storage'
@@ -25,6 +26,7 @@ function ExpandedCard({ gem, colorIdx, onClose }: { gem: GemCard; colorIdx: numb
   const bgOpacity = useRef(new Animated.Value(0)).current
   const cardScale = useRef(new Animated.Value(0.85)).current
   const cardOpacity = useRef(new Animated.Value(0)).current
+  const cardRef = useRef<View>(null)
 
   useEffect(() => {
     Animated.parallel([
@@ -42,13 +44,19 @@ function ExpandedCard({ gem, colorIdx, onClose }: { gem: GemCard; colorIdx: numb
     ]).start(() => onClose())
   }
 
-  async function handleCopyShare() {
+  async function handleDownload() {
     try {
-      await Clipboard.setStringAsync(gem.text)
+      const { status } = await MediaLibrary.requestPermissionsAsync()
+      if (status !== 'granted') {
+        Alert.alert('需要相册权限', '请在系统设置中允许访问相册，才能保存卡片图片。')
+        return
+      }
+      const uri = await captureRef(cardRef, { format: 'png', quality: 1 })
+      await MediaLibrary.saveToLibraryAsync(uri)
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-      Alert.alert('已复制到剪贴板', gem.text.length > 40 ? gem.text.slice(0, 40) + '…' : gem.text)
+      Alert.alert('已保存到相册')
     } catch {
-      Alert.alert('复制失败', '请稍后重试')
+      Alert.alert('保存失败', '请稍后重试')
     }
   }
 
@@ -63,7 +71,9 @@ function ExpandedCard({ gem, colorIdx, onClose }: { gem: GemCard; colorIdx: numb
           transform: [{ scale: cardScale }],
           opacity: cardOpacity,
         }]}>
-          <LinearGradient colors={colors} start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }} style={StyleSheet.absoluteFill} />
+          <View ref={cardRef} style={StyleSheet.absoluteFill} collapsable={false}>
+            <LinearGradient colors={colors} start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }} style={StyleSheet.absoluteFill} />
+          </View>
           <TouchableOpacity style={expandStyles.closeBtn} onPress={handleClose}>
             <Ionicons name="close" size={14} color={textColor} style={{ opacity: 0.6 }} />
           </TouchableOpacity>
@@ -71,7 +81,7 @@ function ExpandedCard({ gem, colorIdx, onClose }: { gem: GemCard; colorIdx: numb
             <Text style={[expandStyles.text, { color: textColor }]}>{gem.text}</Text>
             <Text style={[expandStyles.date, { color: textColor }]}>{gem.category} · 洞察时刻</Text>
           </View>
-          <TouchableOpacity style={expandStyles.shareBtn} onPress={handleCopyShare} activeOpacity={0.7}>
+          <TouchableOpacity style={expandStyles.shareBtn} onPress={handleDownload} activeOpacity={0.7}>
             <Ionicons name="download-outline" size={14} color={textColor} style={{ opacity: 0.6 }} />
           </TouchableOpacity>
         </Animated.View>

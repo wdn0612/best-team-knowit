@@ -92,7 +92,7 @@ export async function saveGems(gems: GemCard[]): Promise<void> {
 
 export async function addGem(gem: GemCard): Promise<void> {
   const gems = await loadGems()
-  gems.unshift(gem)
+  gems.unshift({ createdAt: Date.now(), ...gem })
   await saveGems(gems)
 }
 
