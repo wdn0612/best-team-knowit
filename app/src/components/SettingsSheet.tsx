@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { GlassCard } from './GlassCard'
+import { USER_AGREEMENT_TEXT, AGREEMENT_VERSION, EFFECTIVE_DATE } from '../agreements/userAgreement'
 
 type SettingsSheetProps = {
   visible: boolean
@@ -22,6 +23,7 @@ export function SettingsSheet({ visible, onClose }: SettingsSheetProps) {
   const [memoryFollowUp, setMemoryFollowUp] = useState(true)
   const [pushNotifications, setPushNotifications] = useState(true)
   const [modalVisible, setModalVisible] = useState(false)
+  const [agreementVisible, setAgreementVisible] = useState(false)
   const slideAnim = useRef(new Animated.Value(SH)).current
 
   const TIME_OPTIONS = ['08:00', '09:00', '12:00', '18:00', '21:00', '22:00']
@@ -156,7 +158,7 @@ export function SettingsSheet({ visible, onClose }: SettingsSheetProps) {
           {/* 关于 */}
           <Text style={styles.sectionLabel}>关于</Text>
           <GlassCard borderRadius={26} style={styles.group}>
-            <TouchableOpacity style={styles.row}>
+            <TouchableOpacity style={styles.row} onPress={() => setAgreementVisible(true)}>
               <View style={styles.rowLeft}>
                 <View style={[styles.iconBox, { backgroundColor: '#B9ECE3' }]}>
                   <Ionicons name="document-text-outline" size={16} color="#fff" />
@@ -188,6 +190,39 @@ export function SettingsSheet({ visible, onClose }: SettingsSheetProps) {
           </GlassCard>
         </ScrollView>
       </Animated.View>
+
+      {/* 用户协议 全屏阅读界面 */}
+      <Modal
+        visible={agreementVisible}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setAgreementVisible(false)}
+      >
+        <View style={styles.agreementContainer}>
+          <LinearGradient
+            colors={['#BFE7EA', '#D4EEF0', '#E2F4F2', '#EAF6F4']}
+            locations={[0, 0.35, 0.6, 1]}
+            style={StyleSheet.absoluteFill}
+          />
+          {/* 顶部导航 */}
+          <View style={[styles.agreementNav, { paddingTop: insets.top + 10 }]}>
+            <TouchableOpacity onPress={() => setAgreementVisible(false)} style={styles.backBtn}>
+              <Ionicons name="chevron-back" size={18} color="#31444A" />
+              <Text style={styles.backText}>返回</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.agreementTitle}>用户协议</Text>
+          <Text style={styles.agreementMeta}>版本 {AGREEMENT_VERSION}　·　{EFFECTIVE_DATE}</Text>
+          {/* 协议正文 */}
+          <ScrollView
+            style={styles.agreementScroll}
+            contentContainerStyle={[styles.agreementContent, { paddingBottom: insets.bottom + 40 }]}
+            showsVerticalScrollIndicator={true}
+          >
+            <Text style={styles.agreementBody}>{USER_AGREEMENT_TEXT}</Text>
+          </ScrollView>
+        </View>
+      </Modal>
     </Modal>
   )
 }
@@ -294,5 +329,41 @@ const styles = StyleSheet.create({
   timeChipTextActive: {
     color: '#31444A',
     fontWeight: '600',
+  },
+  // 用户协议 modal styles
+  agreementContainer: {
+    flex: 1,
+  },
+  agreementNav: {
+    paddingHorizontal: 20,
+    paddingBottom: 4,
+  },
+  agreementTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#304148',
+    letterSpacing: -0.5,
+    marginTop: 4,
+    marginBottom: 2,
+    paddingHorizontal: 20,
+  },
+  agreementMeta: {
+    fontSize: 12,
+    color: '#6E7F86',
+    paddingHorizontal: 20,
+    marginBottom: 12,
+  },
+  agreementScroll: {
+    flex: 1,
+  },
+  agreementContent: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+  },
+  agreementBody: {
+    fontSize: 13.5,
+    lineHeight: 22,
+    color: '#304148',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
   },
 })
