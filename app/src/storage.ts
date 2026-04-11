@@ -66,15 +66,19 @@ export type GemCard = {
   text: string
   category: string
   source: string
+  createdAt?: number
 }
 
 export function getDefaultGems(): GemCard[] {
+  // Spread default gems across the last 5 days so date filtering has something to show
+  const now = Date.now()
+  const day = 24 * 60 * 60 * 1000
   return [
-    { id: '1', text: 'Fake it till you make it', category: '每日灵感', source: '小知了 · 每日一句' },
-    { id: '2', text: '戒掉过度自省，享受缺德人生', category: '人生哲学', source: '小知了 · 每日一句' },
-    { id: '3', text: '把期望降低，把付出当礼物，你就赢了', category: '心态修炼', source: '小知了 · 每日一句' },
-    { id: '4', text: 'Done is better than perfect', category: '效率法则', source: '小知了 · 每日一句' },
-    { id: '5', text: '允许一切发生', category: '人生哲学', source: '小知了 · 每日一句' },
+    { id: '1', text: 'Fake it till you make it', category: '每日灵感', source: '小知了 · 每日一句', createdAt: now - 4 * day },
+    { id: '2', text: '戒掉过度自省，享受缺德人生', category: '人生哲学', source: '小知了 · 每日一句', createdAt: now - 3 * day },
+    { id: '3', text: '把期望降低，把付出当礼物，你就赢了', category: '心态修炼', source: '小知了 · 每日一句', createdAt: now - 2 * day },
+    { id: '4', text: 'Done is better than perfect', category: '效率法则', source: '小知了 · 每日一句', createdAt: now - 1 * day },
+    { id: '5', text: '允许一切发生', category: '人生哲学', source: '小知了 · 每日一句', createdAt: now },
   ]
 }
 
@@ -88,7 +92,7 @@ export async function saveGems(gems: GemCard[]): Promise<void> {
 
 export async function addGem(gem: GemCard): Promise<void> {
   const gems = await loadGems()
-  gems.unshift(gem)
+  gems.unshift({ createdAt: Date.now(), ...gem })
   await saveGems(gems)
 }
 
