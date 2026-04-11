@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Pressable, Platform, Animated, Dimensions, Easing, TextInput } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Pressable, Platform, Animated, Dimensions, Easing, TextInput, KeyboardAvoidingView } from 'react-native'
 import { useContext, useState, useCallback, useRef, useEffect } from 'react'
 import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import Markdown from '@ronradtke/react-native-markdown-display'
@@ -80,20 +80,29 @@ export function Journal() {
 
   async function saveEdit() {
     if (!selectedEntry) return
-    // Build updated entry: replace all assistant messages with single updated message
-    const updatedMessages = selectedEntry.messages.map((msg: any, idx: number) => {
-      if (idx === 0 && msg.assistant !== undefined) {
-        return { ...msg, assistant: editText }
-      }
-      return msg
-    })
-    // If no message had assistant content, put the text into the last message
-    const hasAssistant = selectedEntry.messages.some((msg: any) => msg.assistant !== undefined)
-    const finalMessages = hasAssistant
-      ? updatedMessages
-      : selectedEntry.messages.map((msg: any, idx: number) =>
-          idx === selectedEntry.messages.length - 1 ? { ...msg, assistant: editText } : msg
-        )
+    // Normalize messages so the full edited text lives only in messages[0].assistant.
+    // This keeps startEditing() round-trip consistent (it concatenates all assistant fields).
+    // Rules:
+    //   - messages[0]: keep user content, set assistant = editText
+    //   - messages[i >= 1]: if has non-empty user, keep it but clear assistant to '';
+    //                       if no user content, drop the message entirely
+    const normalizedMessages = selectedEntry.messages
+      .map((msg: any, idx: number) => {
+        if (idx === 0) {
+          return { ...msg, assistant: editText }
+        }
+        // For subsequent messages: keep only if they have user content
+        const hasUser = msg.user && (msg.user as string).trim().length > 0
+        if (!hasUser) return null
+        return { ...msg, assistant: '' }
+      })
+      .filter(Boolean)
+
+    // Edge case: if messages was empty, create a minimal entry
+    const finalMessages = normalizedMessages.length > 0
+      ? normalizedMessages
+      : [{ user: '', assistant: editText, timestamp: Date.now() }]
+
     const updatedEntry: ChatHistory = {
       ...selectedEntry,
       messages: finalMessages,
@@ -260,16 +269,20 @@ export function Journal() {
                       </Text>
                     </View>
                     {isEditing ? (
-                      <TextInput
-                        style={styles.detailEditInput}
-                        value={editText}
-                        onChangeText={setEditText}
-                        multiline
-                        autoFocus
-                        textAlignVertical="top"
-                        placeholder="编辑日记内容..."
-                        placeholderTextColor="#96A6AC"
-                      />
+                      <KeyboardAvoidingView
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                      >
+                        <TextInput
+                          style={styles.detailEditInput}
+                          value={editText}
+                          onChangeText={setEditText}
+                          multiline
+                          autoFocus
+                          textAlignVertical="top"
+                          placeholder="编辑日记内容..."
+                          placeholderTextColor="#96A6AC"
+                        />
+                      </KeyboardAvoidingView>
                     ) : (
                       selectedEntry.messages.map((msg: any, idx: number) => (
                         <View key={idx} style={styles.detailParagraph}>
