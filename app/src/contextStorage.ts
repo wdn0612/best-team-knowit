@@ -67,6 +67,7 @@ export type ContextPayload = {
   emotionTrajectory?: EmotionEntry[]
   recentSummaries?: ConversationSummary[]
   pendingEvents?: LifeEvent[]
+  localTime?: string  // client's local datetime string, e.g. "2026-04-11 18:00 Saturday 傍晚"
 }
 
 const EMPTY_PROFILE: UserProfile = {
@@ -241,6 +242,33 @@ export async function markEventCheckedIn(eventId: string): Promise<void> {
   }
 }
 
+// --- Local time helper ---
+
+const WEEKDAY_ZH = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+
+function getTimeOfDayLabel(hour: number): string {
+  if (hour >= 5 && hour < 9) return '早上'
+  if (hour >= 9 && hour < 12) return '上午'
+  if (hour >= 12 && hour < 14) return '中午'
+  if (hour >= 14 && hour < 18) return '下午'
+  if (hour >= 18 && hour < 21) return '傍晚'
+  if (hour >= 21 && hour < 24) return '晚上'
+  return '深夜'
+}
+
+function buildLocalTimeString(): string {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  const hour = now.getHours()
+  const minute = String(now.getMinutes()).padStart(2, '0')
+  const weekday = WEEKDAY_ZH[now.getDay()]
+  const timeLabel = getTimeOfDayLabel(hour)
+  const hourStr = String(hour).padStart(2, '0')
+  return `${year}-${month}-${day} ${hourStr}:${minute} ${weekday} ${timeLabel}`
+}
+
 // --- Build context for API call ---
 
 export async function buildContextPayload(): Promise<ContextPayload> {
@@ -251,7 +279,13 @@ export async function buildContextPayload(): Promise<ContextPayload> {
     loadPendingEvents()
   ])
 
-  return { userProfile, emotionTrajectory, recentSummaries, pendingEvents }
+  return {
+    userProfile,
+    emotionTrajectory,
+    recentSummaries,
+    pendingEvents,
+    localTime: buildLocalTimeString()
+  }
 }
 
 // --- Post-conversation extraction ---

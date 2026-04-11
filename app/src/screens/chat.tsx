@@ -357,11 +357,18 @@ export function Chat() {
       return acc
     }, [])
 
-    const es = await getEventSource({
-      body: { messages: apiMessages },
-      type: 'agent',
-      chatId: currentId
-    })
+    let es: any
+    try {
+      es = await getEventSource({
+        body: { messages: apiMessages },
+        type: 'agent',
+        chatId: currentId
+      })
+    } catch (err) {
+      console.error("Failed to open event source:", err)
+      setLoading(false)
+      return
+    }
 
     const listener = (event: any) => {
       if (event.type === "open") {
@@ -449,8 +456,10 @@ export function Chat() {
             createdAt: currentCreatedAt,
             updatedAt: Date.now(),
           })
-          // Extract user context in background (notifications scheduled inside)
-          extractAndSaveContext(currentId, apiMessages).catch(() => {})
+          // Extract user context in background — fire-and-forget, NEVER blocks next message
+          extractAndSaveContext(currentId, apiMessages).catch((err) => {
+            console.warn('[chat] extractAndSaveContext failed silently:', err)
+          })
           es.close()
         }
       } else if (event.type === "error") {
@@ -590,11 +599,18 @@ export function Chat() {
       return acc
     }, [])
 
-    const es = await getEventSource({
-      body: { messages: apiMessages },
-      type: 'agent',
-      chatId: currentId
-    })
+    let es: any
+    try {
+      es = await getEventSource({
+        body: { messages: apiMessages },
+        type: 'agent',
+        chatId: currentId
+      })
+    } catch (err) {
+      console.error("Failed to open event source (edit):", err)
+      setLoading(false)
+      return
+    }
 
     const listener = (event: any) => {
       if (event.type === "open") {
@@ -656,8 +672,10 @@ export function Chat() {
             createdAt: currentCreatedAt,
             updatedAt: Date.now(),
           })
-          // Extract user context in background (notifications scheduled inside)
-          extractAndSaveContext(currentId, apiMessages).catch(() => {})
+          // Extract user context in background — fire-and-forget, NEVER blocks next message
+          extractAndSaveContext(currentId, apiMessages).catch((err) => {
+            console.warn('[confirmEditing] extractAndSaveContext failed silently:', err)
+          })
           es.close()
         }
       } else if (event.type === "error") {
@@ -997,34 +1015,6 @@ export function Chat() {
         onTouchStart={() => { if (menuIndex !== null) setMenuIndex(null) }}
       >
         {
-          !callMade && (
-            <View style={styles.midChatInputWrapper}>
-              <View style={styles.midChatInputContainer}>
-                <ChatInput
-                  value={input}
-                  onChangeText={v => setInput(v)}
-                  onSubmit={chat}
-                  placeholder={isXinji ? '想说点什么……' : 'Message'}
-                />
-                <Button
-                  variant="primary"
-                  onPress={chat}
-                  accessibilityLabel="Start chat"
-                  style={styles.midButtonStyle}
-                >
-                  <Ionicons
-                    name="chatbox-ellipses-outline"
-                    size={22} color={theme.tintTextColor}
-                  />
-                  <Text style={styles.midButtonText}>
-                    {isXinji ? '开始对话' : 'Start chat'}
-                  </Text>
-                </Button>
-              </View>
-            </View>
-          )
-        }
-        {
           callMade && (
             <FlatList
               data={chatState.messages}
@@ -1039,31 +1029,28 @@ export function Chat() {
           )
         }
       </ScrollView>
-      {
-        callMade && (
-          <View style={[{ paddingBottom: keyboardVisible ? 0 : 50 + insets.bottom }, isXinji && styles.xinjiInputWrap]}>
-            <ChatInput
-              value={input}
-              onChangeText={v => setInput(v)}
-              onSubmit={chat}
-              placeholder={isXinji ? '想说点什么……' : 'Message'}
-              rightAction={isXinji ? undefined :
-                <Button
-                  variant="icon"
-                  onPress={chat}
-                  accessibilityLabel="Send message"
-                  style={styles.chatButton}
-                >
-                  <Ionicons
-                    name="arrow-up-outline"
-                    size={20} color={theme.tintTextColor}
-                  />
-                </Button>
-              }
-            />
-          </View>
-        )
-      }
+      {/* Input is always docked to the bottom, above keyboard */}
+      <View style={[{ paddingBottom: keyboardVisible ? 0 : 50 + insets.bottom }, isXinji && styles.xinjiInputWrap]}>
+        <ChatInput
+          value={input}
+          onChangeText={v => setInput(v)}
+          onSubmit={chat}
+          placeholder={isXinji ? '想说点什么……' : 'Message'}
+          rightAction={isXinji ? undefined :
+            <Button
+              variant="icon"
+              onPress={chat}
+              accessibilityLabel="Send message"
+              style={styles.chatButton}
+            >
+              <Ionicons
+                name="arrow-up-outline"
+                size={20} color={theme.tintTextColor}
+              />
+            </Button>
+          }
+        />
+      </View>
     </KeyboardAvoidingView>
     </GradientBackground>
     <Modal
@@ -1466,25 +1453,6 @@ const getStyles = (theme: any) => StyleSheet.create({
   },
   scrollContentContainer: {
     flex: 1,
-  },
-  midButtonStyle: {
-    marginHorizontal: spacing.lg,
-  },
-  midButtonText: {
-    color: theme.tintTextColor,
-    marginLeft: spacing.md,
-    fontFamily: theme.boldFont,
-    fontSize: 16
-  },
-  midChatInputWrapper: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  midChatInputContainer: {
-    width: '100%',
-    paddingTop: spacing.xs,
-    paddingBottom: spacing.xs,
   },
   loadingContainer: {
     marginTop: spacing.xxl

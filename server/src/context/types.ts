@@ -56,6 +56,7 @@ export type ContextPayload = {
   emotionTrajectory?: EmotionEntry[]
   recentSummaries?: ConversationSummary[]
   pendingEvents?: LifeEvent[]
+  localTime?: string  // client's local datetime string, e.g. "2026-04-11 18:00 Saturday 傍晚"
 }
 
 export const EMPTY_PROFILE: UserProfile = {
