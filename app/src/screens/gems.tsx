@@ -1,4 +1,4 @@
-import { Text, View, StyleSheet, ScrollView, TouchableOpacity, Modal, Dimensions, Platform, Animated, Pressable, Easing } from 'react-native'
+import { Text, View, StyleSheet, ScrollView, TouchableOpacity, Modal, Dimensions, Platform, Animated, Pressable, Easing, Alert } from 'react-native'
 import { useContext, useState, useCallback, useRef, useEffect } from 'react'
 import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
@@ -43,8 +43,13 @@ function ExpandedCard({ gem, colorIdx, onClose }: { gem: GemCard; colorIdx: numb
   }
 
   async function handleCopyShare() {
-    await Clipboard.setStringAsync(gem.text)
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+    try {
+      await Clipboard.setStringAsync(gem.text)
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      Alert.alert('已复制到剪贴板', gem.text.length > 40 ? gem.text.slice(0, 40) + '…' : gem.text)
+    } catch {
+      Alert.alert('复制失败', '请稍后重试')
+    }
   }
 
   const colors = CARD_COLORS[colorIdx]
@@ -145,6 +150,229 @@ const expandStyles = StyleSheet.create({
   },
 })
 
+// ─── Inline Month-Grid Calendar Picker ───────────────────────────────────────
+
+function isSameDay(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+}
+
+function CalendarModal({
+  visible,
+  selectedDate,
+  activeDates,
+  onSelect,
+  onClear,
+  onClose,
+}: {
+  visible: boolean
+  selectedDate: Date | null
+  activeDates: Date[]
+  onSelect: (d: Date) => void
+  onClear: () => void
+  onClose: () => void
+}) {
+  const today = new Date()
+  const [viewYear, setViewYear] = useState(today.getFullYear())
+  const [viewMonth, setViewMonth] = useState(today.getMonth()) // 0-indexed
+
+  function prevMonth() {
+    if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1) }
+    else setViewMonth(m => m - 1)
+  }
+  function nextMonth() {
+    if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1) }
+    else setViewMonth(m => m + 1)
+  }
+
+  // Build grid of days for viewYear/viewMonth
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay() // 0=Sun
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
+  const cells: (number | null)[] = [
+    ...Array(firstDay).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ]
+  // pad to complete last row
+  while (cells.length % 7 !== 0) cells.push(null)
+
+  const monthLabel = `${viewYear}年${viewMonth + 1}月`
+  const weekDays = ['日', '一', '二', '三', '四', '五', '六']
+
+  return (
+    <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
+      <Pressable style={calStyles.overlay} onPress={onClose}>
+        <Pressable style={calStyles.sheet} onPress={e => e.stopPropagation()}>
+          {/* Header */}
+          <View style={calStyles.header}>
+            <TouchableOpacity onPress={prevMonth} style={calStyles.navBtn}>
+              <Ionicons name="chevron-back" size={18} color="#31444A" />
+            </TouchableOpacity>
+            <Text style={calStyles.monthLabel}>{monthLabel}</Text>
+            <TouchableOpacity onPress={nextMonth} style={calStyles.navBtn}>
+              <Ionicons name="chevron-forward" size={18} color="#31444A" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Week-day labels */}
+          <View style={calStyles.weekRow}>
+            {weekDays.map(d => (
+              <Text key={d} style={calStyles.weekDay}>{d}</Text>
+            ))}
+          </View>
+
+          {/* Day cells */}
+          <View style={calStyles.grid}>
+            {cells.map((day, idx) => {
+              if (!day) return <View key={`e${idx}`} style={calStyles.cell} />
+              const cellDate = new Date(viewYear, viewMonth, day)
+              const isSelected = selectedDate ? isSameDay(cellDate, selectedDate) : false
+              const hasGem = activeDates.some(d => isSameDay(d, cellDate))
+              const isToday = isSameDay(cellDate, today)
+              return (
+                <TouchableOpacity
+                  key={day}
+                  style={[calStyles.cell, isSelected && calStyles.cellSelected]}
+                  onPress={() => { onSelect(cellDate); onClose() }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    calStyles.dayText,
+                    isToday && calStyles.dayToday,
+                    isSelected && calStyles.daySelectedText,
+                  ]}>{day}</Text>
+                  {hasGem && !isSelected && <View style={calStyles.dot} />}
+                </TouchableOpacity>
+              )
+            })}
+          </View>
+
+          {/* Footer */}
+          <View style={calStyles.footer}>
+            {selectedDate && (
+              <TouchableOpacity onPress={() => { onClear(); onClose() }} style={calStyles.clearBtn}>
+                <Text style={calStyles.clearText}>清除筛选</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity onPress={onClose} style={calStyles.doneBtn}>
+              <Text style={calStyles.doneText}>完成</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  )
+}
+
+const calStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(20,34,40,0.35)',
+    justifyContent: 'flex-end',
+  },
+  sheet: {
+    backgroundColor: '#EAF3F6',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 20,
+    paddingBottom: 36,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  navBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: 'rgba(49,68,74,0.08)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  monthLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#31444A',
+    letterSpacing: 0.3,
+  },
+  weekRow: {
+    flexDirection: 'row',
+    marginBottom: 4,
+  },
+  weekDay: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 11,
+    color: '#6E7F86',
+    fontWeight: '500',
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  cell: {
+    width: `${100 / 7}%`,
+    aspectRatio: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cellSelected: {
+    backgroundColor: '#31444A',
+    borderRadius: 99,
+  },
+  dayText: {
+    fontSize: 14,
+    color: '#31444A',
+  },
+  dayToday: {
+    fontWeight: '700',
+    color: '#3A8C9E',
+  },
+  daySelectedText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  dot: {
+    position: 'absolute',
+    bottom: 3,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#3A8C9E',
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 12,
+    gap: 10,
+  },
+  clearBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: 'rgba(49,68,74,0.08)',
+  },
+  clearText: {
+    fontSize: 14,
+    color: '#6E7F86',
+  },
+  doneBtn: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: '#31444A',
+  },
+  doneText: {
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: '600',
+  },
+})
+
+// ─── Main Gems Screen ─────────────────────────────────────────────────────────
+
 export function Gems() {
   const { theme } = useContext(ThemeContext)
   const isXinji = theme.label === 'xinji'
@@ -153,6 +381,8 @@ export function Gems() {
   const [gems, setGems] = useState<GemCard[]>(getDefaultGems())
   const swipeableRefs = useRef<Map<string, Swipeable>>(new Map())
   const [expandedGem, setExpandedGem] = useState<{ gem: GemCard; colorIdx: number } | null>(null)
+  const [calendarVisible, setCalendarVisible] = useState(false)
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
 
   useFocusEffect(
     useCallback(() => {
@@ -160,9 +390,30 @@ export function Gems() {
     }, [])
   )
 
+  // Derive the set of dates that have at least one gem (for calendar dots)
+  const activeDates = gems
+    .filter(g => g.createdAt != null)
+    .map(g => new Date(g.createdAt!))
+
+  // Filter gems by selected date (match same calendar day); if none selected, show all
+  const filteredGems = selectedDate
+    ? gems.filter(g => {
+        if (!g.createdAt) return false
+        return isSameDay(new Date(g.createdAt), selectedDate)
+      })
+    : gems
+
   async function handleDelete(id: string) {
     await deleteGem(id)
     setGems(prev => prev.filter(g => g.id !== id))
+  }
+
+  function handleCalendarSelect(date: Date) {
+    setSelectedDate(date)
+  }
+
+  function handleCalendarClear() {
+    setSelectedDate(null)
   }
 
   function renderRightActions(id: string) {
@@ -189,6 +440,10 @@ export function Gems() {
     )
   }
 
+  const selectedDateLabel = selectedDate
+    ? `${selectedDate.getFullYear()}/${String(selectedDate.getMonth() + 1).padStart(2, '0')}/${String(selectedDate.getDate()).padStart(2, '0')}`
+    : null
+
   // Xinji card grid style
   if (isXinji) {
     return (
@@ -200,16 +455,36 @@ export function Gems() {
           <View style={[styles.xinjiHeader, { paddingTop: insets.top + spacing.md }]}>
             <View>
               <Text style={styles.xinjiTitle}>洞察</Text>
-              <Text style={styles.xinjiSubtitle}>值得反复看的那些话</Text>
+              <Text style={styles.xinjiSubtitle}>
+                {selectedDateLabel ? `${selectedDateLabel} · ${filteredGems.length} 条` : '值得反复看的那些话'}
+              </Text>
             </View>
-            <TouchableOpacity style={styles.datePick}>
-              <Ionicons name="calendar-outline" size={20} color="#31444A" />
+            <TouchableOpacity
+              style={[styles.datePick, selectedDate && styles.datePickActive]}
+              onPress={() => setCalendarVisible(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={selectedDate ? 'calendar' : 'calendar-outline'}
+                size={20}
+                color={selectedDate ? '#3A8C9E' : '#31444A'}
+              />
             </TouchableOpacity>
           </View>
 
+          {/* Empty-date state */}
+          {filteredGems.length === 0 && selectedDate && (
+            <View style={styles.emptyDate}>
+              <Text style={styles.emptyDateText}>该日期没有洞察</Text>
+              <TouchableOpacity onPress={handleCalendarClear}>
+                <Text style={styles.emptyDateLink}>查看全部</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           {/* Card grid */}
           <View style={styles.cardGrid}>
-            {gems.map((gem, idx) => {
+            {filteredGems.map((gem, idx) => {
               const colorIdx = idx % CARD_COLORS.length
               const colors = CARD_COLORS[colorIdx]
               const textColor = CARD_TEXT_COLORS[colorIdx]
@@ -250,6 +525,16 @@ export function Gems() {
             onClose={() => setExpandedGem(null)}
           />
         )}
+
+        {/* Calendar picker */}
+        <CalendarModal
+          visible={calendarVisible}
+          selectedDate={selectedDate}
+          activeDates={activeDates}
+          onSelect={handleCalendarSelect}
+          onClear={handleCalendarClear}
+          onClose={() => setCalendarVisible(false)}
+        />
       </GradientBackground>
     )
   }
@@ -381,6 +666,24 @@ const getStyles = (theme: any) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 4,
+    backgroundColor: 'rgba(49,68,74,0.06)',
+  },
+  datePickActive: {
+    backgroundColor: 'rgba(58,140,158,0.12)',
+  },
+  emptyDate: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    gap: 8,
+  },
+  emptyDateText: {
+    fontSize: 15,
+    color: '#6E7F86',
+  },
+  emptyDateLink: {
+    fontSize: 14,
+    color: '#3A8C9E',
+    textDecorationLine: 'underline',
   },
   xinjiTitle: {
     fontSize: 28,
