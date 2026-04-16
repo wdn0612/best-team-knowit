@@ -4,7 +4,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import Markdown from '@ronradtke/react-native-markdown-display'
 import { ThemeContext } from '../context'
 import { loadAllChatHistories, saveChatHistory, ChatHistory } from '../storage'
-import { Card, GlassCard, GradientBackground } from '../components'
+import { Card, GlassCard, GradientBackground, CalendarModal, isSameDay } from '../components'
 import { spacing } from '../theme'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -37,7 +37,11 @@ export function Journal() {
   const [detailModalVisible, setDetailModalVisible] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editText, setEditText] = useState('')
+  const [calendarVisible, setCalendarVisible] = useState(false)
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [selectedMonth, setSelectedMonth] = useState<{ year: number; month: number } | null>(null)
   const detailSlideAnim = useRef(new Animated.Value(Dimensions.get('window').height)).current
+  const detailScrollRef = useRef<ScrollView>(null)
   const navigation = useNavigation<any>()
 
   function openDetail(entry: ChatHistory) {
@@ -192,6 +196,22 @@ export function Journal() {
 
   // Xinji diary card style
   if (isXinji) {
+    const activeDates = entries.map(e => new Date(e.updatedAt))
+    const filteredEntries = selectedDate
+      ? entries.filter(e => isSameDay(new Date(e.updatedAt), selectedDate))
+      : selectedMonth
+        ? entries.filter(e => {
+            const d = new Date(e.updatedAt)
+            return d.getFullYear() === selectedMonth.year && d.getMonth() === selectedMonth.month
+          })
+        : entries
+    const selectedDateLabel = selectedDate
+      ? `${selectedDate.getFullYear()}/${String(selectedDate.getMonth() + 1).padStart(2, '0')}/${String(selectedDate.getDate()).padStart(2, '0')}`
+      : selectedMonth
+        ? `${selectedMonth.year}年${selectedMonth.month + 1}月`
+        : null
+    const hasFilter = !!(selectedDate || selectedMonth)
+
     return (
       <GradientBackground>
         <ScrollView
@@ -201,14 +221,34 @@ export function Journal() {
           <View style={[styles.xinjiHeader, { paddingTop: insets.top + spacing.md }]}>
             <View>
               <Text style={styles.xinjiTitle}>日记</Text>
-              <Text style={styles.xinjiSubtitle}>你的每一段故事都值得被记住</Text>
+              <Text style={styles.xinjiSubtitle}>
+                {selectedDateLabel ? `${selectedDateLabel} · ${filteredEntries.length} 条` : '你的每一段故事都值得被记住'}
+              </Text>
             </View>
-            <TouchableOpacity style={styles.datePick}>
-              <Ionicons name="calendar-outline" size={20} color="#31444A" />
+            <TouchableOpacity
+              style={[styles.datePick, hasFilter && styles.datePickActive]}
+              onPress={() => setCalendarVisible(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={hasFilter ? 'calendar' : 'calendar-outline'}
+                size={20}
+                color={hasFilter ? '#3A8C9E' : '#31444A'}
+              />
             </TouchableOpacity>
           </View>
+          {filteredEntries.length === 0 && hasFilter && (
+            <View style={styles.emptyDate}>
+              <Text style={styles.emptyDateText}>
+                {selectedMonth ? '该月份没有日记' : '该日期没有日记'}
+              </Text>
+              <TouchableOpacity onPress={() => { setSelectedDate(null); setSelectedMonth(null) }}>
+                <Text style={styles.emptyDateLink}>查看全部</Text>
+              </TouchableOpacity>
+            </View>
+          )}
           <View style={styles.xinjiList}>
-            {entries.map((entry) => (
+            {filteredEntries.map((entry) => (
               <TouchableOpacity
                 key={entry.id}
                 activeOpacity={0.9}
@@ -234,6 +274,17 @@ export function Journal() {
           </View>
         </ScrollView>
 
+        <CalendarModal
+          visible={calendarVisible}
+          selectedDate={selectedDate}
+          selectedMonth={selectedMonth}
+          activeDates={activeDates}
+          onSelect={(d) => { setSelectedDate(d); setSelectedMonth(null) }}
+          onSelectMonth={(year, month) => { setSelectedMonth({ year, month }); setSelectedDate(null) }}
+          onClear={() => { setSelectedDate(null); setSelectedMonth(null) }}
+          onClose={() => setCalendarVisible(false)}
+        />
+
         {/* Detail overlay */}
         <Modal
           visible={detailModalVisible}
@@ -244,7 +295,13 @@ export function Journal() {
           {selectedEntry && (
             <Animated.View style={{ flex: 1, transform: [{ translateY: detailSlideAnim }] }}>
               <GradientBackground>
-                <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 60, paddingTop: insets.top }}>
+                <ScrollView
+                  ref={detailScrollRef}
+                  style={{ flex: 1 }}
+                  contentContainerStyle={{ paddingBottom: 60, paddingTop: insets.top }}
+                  keyboardShouldPersistTaps="handled"
+                  automaticallyAdjustKeyboardInsets
+                >
                   <View style={styles.detailNav}>
                     <TouchableOpacity onPress={closeDetail} style={styles.detailBack}>
                       <Ionicons name="chevron-back" size={18} color="#31444A" />
@@ -269,20 +326,17 @@ export function Journal() {
                       </Text>
                     </View>
                     {isEditing ? (
-                      <KeyboardAvoidingView
-                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                      >
-                        <TextInput
-                          style={styles.detailEditInput}
-                          value={editText}
-                          onChangeText={setEditText}
-                          multiline
-                          autoFocus
-                          textAlignVertical="top"
-                          placeholder="编辑日记内容..."
-                          placeholderTextColor="#96A6AC"
-                        />
-                      </KeyboardAvoidingView>
+                      <TextInput
+                        style={styles.detailEditInput}
+                        value={editText}
+                        onChangeText={setEditText}
+                        multiline
+                        autoFocus
+                        textAlignVertical="top"
+                        placeholder="编辑日记内容..."
+                        placeholderTextColor="#96A6AC"
+                        scrollEnabled={false}
+                      />
                     ) : (
                       selectedEntry.messages.map((msg: any, idx: number) => (
                         <View key={idx} style={styles.detailParagraph}>
@@ -492,6 +546,24 @@ const getStyles = (theme: any) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 4,
+    backgroundColor: 'rgba(49,68,74,0.06)',
+  },
+  datePickActive: {
+    backgroundColor: 'rgba(58,140,158,0.12)',
+  },
+  emptyDate: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    gap: 8,
+  },
+  emptyDateText: {
+    fontSize: 15,
+    color: '#6E7F86',
+  },
+  emptyDateLink: {
+    fontSize: 14,
+    color: '#3A8C9E',
+    textDecorationLine: 'underline',
   },
   xinjiList: {
     paddingHorizontal: spacing.xl,

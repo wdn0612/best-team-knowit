@@ -1,7 +1,31 @@
-<svg width="1200pt" height="1200pt" version="1.1" viewBox="0 0 1200 1200" xmlns="http://www.w3.org/2000/svg">
- <g>
-  <path d="m498.46 410.29h421.25l-378.27 655.16h142.4l378.16-655.16 71.254-123.3h-706.03z"/>
-  <path d="m726.83 439.5-210.62 364.81-378.25-655.19-71.195 123.32 378.3 655.08 71.148 123.36 353.02-611.45z"/>
-  <path d="m587.34 622.67-210.62-364.81 756.53 0.011719-71.195-123.32-898.87 0.023437 353.02 611.45z"/>
- </g>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#EAF5F7"/>
+      <stop offset="100%" stop-color="#B6D5DE"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="1024" height="1024" rx="224" ry="224" fill="url(#bg)"/>
+
+  <g stroke="#1F3239" stroke-width="22" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 484 320 C 456 276, 420 246, 378 234"/>
+    <path d="M 540 320 C 568 276, 604 246, 646 234"/>
+
+    <path d="M 460 420
+             C 470 560, 480 680, 512 770
+             C 544 680, 554 560, 564 420
+             C 544 390, 480 390, 460 420 Z"/>
+
+    <path d="M 460 438
+             C 310 448, 236 544, 258 668
+             C 288 700, 380 694, 456 616"/>
+
+    <path d="M 564 438
+             C 714 448, 788 544, 766 668
+             C 736 700, 644 694, 568 616"/>
+
+    <circle cx="492" cy="402" r="7" fill="#1F3239"/>
+    <circle cx="532" cy="402" r="7" fill="#1F3239"/>
+  </g>
 </svg>

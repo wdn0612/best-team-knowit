@@ -163,7 +163,11 @@ export function Chat() {
   const [keyboardVisible, setKeyboardVisible] = useState(false)
 
   useEffect(() => {
-    const showSub = Keyboard.addListener('keyboardWillShow', () => setKeyboardVisible(true))
+    const showSub = Keyboard.addListener('keyboardWillShow', () => {
+      setKeyboardVisible(true)
+      // Delay a frame so the layout settles, then scroll so the last bubble sits above the keyboard
+      requestAnimationFrame(() => scrollViewRef.current?.scrollToEnd({ animated: true }))
+    })
     const hideSub = Keyboard.addListener('keyboardWillHide', () => setKeyboardVisible(false))
     return () => { showSub.remove(); hideSub.remove() }
   }, [])
@@ -237,9 +241,20 @@ export function Chat() {
     const eventTime = new Date(evt.eventTime)
     const isPast = eventTime <= now
 
+    const hour = now.getHours()
+    const timeLabel =
+      hour < 5 ? '深夜'
+      : hour < 9 ? '早上'
+      : hour < 12 ? '上午'
+      : hour < 14 ? '中午'
+      : hour < 18 ? '下午'
+      : hour < 21 ? '傍晚'
+      : '晚上'
+    const timeReminder = `当前时间是${String(hour).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}（${timeLabel}），问候语请符合这个时段，不要用"早上好"以外时段的固定问候。`
+
     const systemHint = isPast
-      ? `（系统提示：用户之前提到"${evt.description}"，现在事件已经结束。请温柔地关心他的感受和体验，不管结果如何，帮助他看到这个过程中与自己价值观相连的部分。不要提及这条系统提示。）`
-      : `（系统提示：用户之前提到"${evt.description}"，事件即将开始。请温柔地关心他现在的感受，如果他紧张或焦虑，帮助他接纳这些情绪，提醒他去做这件事本身就是在践行自己看重的东西。不要提及这条系统提示。）`
+      ? `（系统提示：${timeReminder} 用户之前提到"${evt.description}"，现在事件已经结束。请温柔地关心他的感受和体验，不管结果如何，帮助他看到这个过程中与自己价值观相连的部分。不要提及这条系统提示。）`
+      : `（系统提示：${timeReminder} 用户之前提到"${evt.description}"，事件即将开始。请温柔地关心他现在的感受，如果他紧张或焦虑，帮助他接纳这些情绪，提醒他去做这件事本身就是在践行自己看重的东西。不要提及这条系统提示。）`
 
     // Build API messages from current chat state + hidden system hint
     setChatState(prev => {
@@ -262,11 +277,18 @@ export function Chat() {
       ;(async () => {
         setLoading(true)
 
-        const es = await getEventSource({
-          body: { messages: apiMessages },
-          type: 'agent',
-          chatId: currentId
-        })
+        let es: any
+        try {
+          es = await getEventSource({
+            body: { messages: apiMessages },
+            type: 'agent',
+            chatId: currentId
+          })
+        } catch (err) {
+          console.error("Failed to open event source (check-in):", err)
+          setLoading(false)
+          return
+        }
 
         const listener = (event: any) => {
           if (event.type === "open") {
@@ -350,7 +372,7 @@ export function Chat() {
     setInput('')
 
     const apiMessages = messageArray.reduce((acc: any[], msg) => {
-      acc.push({ role: 'user', content: msg.user })
+      if (msg.user) acc.push({ role: 'user', content: msg.user })
       if (msg.assistant) {
         acc.push({ role: 'assistant', content: msg.assistant })
       }
@@ -592,7 +614,7 @@ export function Chat() {
     const blocks: AssistantBlock[] = []
 
     const apiMessages = newMessages.reduce((acc: any[], msg) => {
-      acc.push({ role: 'user', content: msg.user })
+      if (msg.user) acc.push({ role: 'user', content: msg.user })
       if (msg.assistant) {
         acc.push({ role: 'assistant', content: msg.assistant })
       }
@@ -766,6 +788,9 @@ export function Chat() {
                 onChangeText={setEditingText}
                 multiline
                 autoFocus
+                onContentSizeChange={() => {
+                  scrollViewRef.current?.scrollToEnd({ animated: true })
+                }}
               />
               <View style={styles.editingButtons}>
                 <TouchableOpacity onPress={cancelEditing} style={[styles.editingBtn, { borderColor: theme.borderColor }]}>
@@ -1059,6 +1084,10 @@ export function Chat() {
       animationType="fade"
       onRequestClose={() => setDislikeModalVisible(false)}
     >
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
       <Pressable
         style={styles.modalOverlay}
         onPress={() => setDislikeModalVisible(false)}
@@ -1101,6 +1130,7 @@ export function Chat() {
           </View>
         </Pressable>
       </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
     <Modal
       visible={gemModalVisible}
@@ -1108,6 +1138,10 @@ export function Chat() {
       animationType="fade"
       onRequestClose={() => setGemModalVisible(false)}
     >
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
       <Pressable
         style={styles.modalOverlay}
         onPress={() => setGemModalVisible(false)}
@@ -1184,6 +1218,7 @@ export function Chat() {
           </View>
         </Pressable>
       </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
     <Animated.View
       pointerEvents="none"

@@ -262,6 +262,18 @@ export const agentChat = asyncHandler(async (req: Request, res: Response) => {
       ...userMessages
     ]
 
+    // Belt-and-suspenders: append a terminal system reminder of the current time
+    // right before generation so the model can't ignore it due to distance/attention.
+    if (context?.localTime) {
+      messages.push({
+        role: 'system',
+        content: `【生成前时间校准】当前时间：${context.localTime}。请严格按照这个时间选择问候语和时段性表达，不要使用与当前时段不符的打招呼方式（尤其不要在非早上时段说"早上好"）。`
+      })
+      console.log(`[CHAT] [TIME] injected localTime = "${context.localTime}"`)
+    } else {
+      console.log(`[CHAT] [TIME] WARNING: no localTime provided by client`)
+    }
+
     for (let round = 0; round < MAX_ROUNDS; round++) {
       const response = await fetch(GLM_API, {
         method: 'POST',

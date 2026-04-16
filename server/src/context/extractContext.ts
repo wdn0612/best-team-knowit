@@ -15,8 +15,19 @@ async function callLLM(messages: any[]): Promise<string> {
       stream: false
     })
   })
+
+  if (!response.ok) {
+    const bodyText = await response.text().catch(() => '(unreadable body)')
+    console.error(`[callLLM] HTTP ${response.status} ${response.statusText}: ${bodyText.slice(0, 500)}`)
+    return ''
+  }
+
   const data = await response.json()
-  return data.choices?.[0]?.message?.content || ''
+  const content = data?.choices?.[0]?.message?.content
+  if (!content) {
+    console.error('[callLLM] OK but empty content. Full response:', JSON.stringify(data).slice(0, 500))
+  }
+  return content || ''
 }
 
 /**
@@ -84,11 +95,15 @@ ${convoText}
 - 每个数组最多保留 5 个最相关的条目
 - 合并而非替换已有信息`
 
+  let rawResult = ''
   try {
-    const result = await callLLM([{ role: 'user', content: prompt }])
+    rawResult = await callLLM([{ role: 'user', content: prompt }])
 
     // Strip markdown code fences if present
-    const cleaned = result.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
+    const cleaned = rawResult.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
+    if (!cleaned) {
+      throw new Error('LLM returned empty response')
+    }
     const parsed = JSON.parse(cleaned)
 
     // Normalize items: handle both old string[] format and new ProfileItem[] format
@@ -142,6 +157,7 @@ ${convoText}
     }
   } catch (err) {
     console.error('extractUserProfile error:', err)
+    console.error('extractUserProfile raw LLM response:', JSON.stringify(rawResult))
     return existingProfile
   }
 }
@@ -184,10 +200,14 @@ ${convoText}
   - "milestone"：人生重大事件（分手、换工作、考试结果、重大决定、家人生病等）
 - themes：2-4 个关键主题标签，如 ["工作压力", "人际关系"]`
 
+  let rawResult = ''
   try {
-    const result = await callLLM([{ role: 'user', content: prompt }])
+    rawResult = await callLLM([{ role: 'user', content: prompt }])
 
-    const cleaned = result.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
+    const cleaned = rawResult.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
+    if (!cleaned) {
+      throw new Error('LLM returned empty response')
+    }
     const parsed = JSON.parse(cleaned)
 
     const emotion: EmotionEntry = {
@@ -213,6 +233,7 @@ ${convoText}
     return { emotion, summary }
   } catch (err) {
     console.error('extractEmotionAndSummary error:', err)
+    console.error('extractEmotionAndSummary raw LLM response:', JSON.stringify(rawResult))
     return {
       emotion: {
         date: today,

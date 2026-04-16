@@ -259,12 +259,20 @@ export function buildSystemPrompt(
   pendingEvents?: LifeEvent[],
   localTime?: string
 ): string {
-  let prompt = BASE_PERSONA
-
-  // Inject local time so the model chooses greetings and time-of-day references correctly
+  // Put current time at the very top so the model always sees it before persona
+  let prompt = ''
   if (localTime) {
-    prompt += `\n\n【当前时间】${localTime}\n请根据当前时间选择合适的问候语和时间性表达（如早安/下午好/晚安），不要假设时间段。`
+    prompt += `【当前时间（用户本地时区）】${localTime}
+
+严格遵守：
+- 必须根据上面字符串末尾的时段标签（早上/上午/中午/下午/傍晚/晚上/深夜）来选择问候语与时段性表达。
+- 时段与问候语对应：早上→"早上好"；上午→"上午好"；中午→"中午好"；下午→"下午好"；傍晚→"傍晚好"或"晚上好"；晚上→"晚上好"；深夜→"这么晚还没睡呀"。
+- 绝对不要在非"早上/上午"的时段使用"早上好/早安"。不要凭空假设时间段。
+
+`
   }
+
+  prompt += BASE_PERSONA
 
   if (profile) {
     prompt += buildProfileSection(profile)

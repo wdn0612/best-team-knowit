@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { GlassCard } from './GlassCard'
-import { USER_AGREEMENT_TEXT, AGREEMENT_VERSION, EFFECTIVE_DATE } from '../agreements/userAgreement'
+import { USER_AGREEMENT, AGREEMENT_VERSION, EFFECTIVE_DATE, AgreementBlock } from '../agreements/userAgreement'
 
 type SettingsSheetProps = {
   visible: boolean
@@ -15,6 +15,46 @@ type SettingsSheetProps = {
 }
 
 const { height: SH } = Dimensions.get('window')
+
+function AgreementBlockView({ block }: { block: AgreementBlock }) {
+  switch (block.type) {
+    case 'lead':
+      return <Text style={styles.agreementLead}>{block.text}</Text>
+    case 'section':
+      return (
+        <View style={styles.agreementSection}>
+          <Text style={styles.agreementSectionIndex}>{block.index}</Text>
+          <Text style={styles.agreementSectionTitle}>{block.title}</Text>
+        </View>
+      )
+    case 'subtitle':
+      return <Text style={styles.agreementSubtitle}>{block.text}</Text>
+    case 'paragraph':
+      return <Text style={styles.agreementParagraph}>{block.text}</Text>
+    case 'bullets':
+      return (
+        <View style={styles.agreementBullets}>
+          {block.items.map((item, i) => (
+            <View key={i} style={styles.agreementBulletRow}>
+              <View style={styles.agreementBulletDot} />
+              <Text style={styles.agreementBulletText}>{item}</Text>
+            </View>
+          ))}
+        </View>
+      )
+    case 'callout':
+      return (
+        <View style={[styles.agreementCallout, block.tone === 'warn' && styles.agreementCalloutWarn]}>
+          {block.title && <Text style={styles.agreementCalloutTitle}>{block.title}</Text>}
+          <Text style={styles.agreementCalloutText}>{block.text}</Text>
+        </View>
+      )
+    case 'footer':
+      return <Text style={styles.agreementFooter}>{block.text}</Text>
+    default:
+      return null
+  }
+}
 
 export function SettingsSheet({ visible, onClose }: SettingsSheetProps) {
   const insets = useSafeAreaInsets()
@@ -219,7 +259,9 @@ export function SettingsSheet({ visible, onClose }: SettingsSheetProps) {
             contentContainerStyle={[styles.agreementContent, { paddingBottom: insets.bottom + 40 }]}
             showsVerticalScrollIndicator={true}
           >
-            <Text style={styles.agreementBody}>{USER_AGREEMENT_TEXT}</Text>
+            {USER_AGREEMENT.map((block, idx) => (
+              <AgreementBlockView key={idx} block={block} />
+            ))}
           </ScrollView>
         </View>
       </Modal>
@@ -360,10 +402,100 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 8,
   },
-  agreementBody: {
+  agreementLead: {
+    fontSize: 14.5,
+    lineHeight: 25,
+    color: '#304148',
+    marginBottom: 20,
+  },
+  agreementSection: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginTop: 26,
+    marginBottom: 10,
+    paddingBottom: 6,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(49,68,74,0.18)',
+  },
+  agreementSectionIndex: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#3A8C9E',
+    marginRight: 8,
+    letterSpacing: 0.5,
+  },
+  agreementSectionTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1F3239',
+    letterSpacing: 0.3,
+  },
+  agreementSubtitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#31444A',
+    marginTop: 14,
+    marginBottom: 4,
+  },
+  agreementParagraph: {
+    fontSize: 14,
+    lineHeight: 24,
+    color: '#304148',
+    marginBottom: 10,
+  },
+  agreementBullets: {
+    marginBottom: 10,
+    gap: 6,
+  },
+  agreementBulletRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingLeft: 4,
+  },
+  agreementBulletDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#3A8C9E',
+    marginTop: 10,
+    marginRight: 10,
+  },
+  agreementBulletText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 24,
+    color: '#304148',
+  },
+  agreementCallout: {
+    backgroundColor: 'rgba(58,140,158,0.08)',
+    borderLeftWidth: 3,
+    borderLeftColor: '#3A8C9E',
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginVertical: 10,
+  },
+  agreementCalloutWarn: {
+    backgroundColor: 'rgba(205,117,85,0.08)',
+    borderLeftColor: '#C16A48',
+  },
+  agreementCalloutTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#8B3F1E',
+    marginBottom: 4,
+    letterSpacing: 0.3,
+  },
+  agreementCalloutText: {
     fontSize: 13.5,
     lineHeight: 22,
-    color: '#304148',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+    color: '#3A2A1E',
+  },
+  agreementFooter: {
+    fontSize: 12,
+    color: '#6E7F86',
+    textAlign: 'center',
+    marginTop: 32,
+    marginBottom: 8,
   },
 })
